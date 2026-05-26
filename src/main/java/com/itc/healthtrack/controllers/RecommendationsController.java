@@ -166,7 +166,8 @@ public class RecommendationsController {
         }).start();
     }
 
-    // trae todas las recomendaciones del paciente en una sola consulta y luego en memoria separa analisis del historial y notas del panel de notas evita las dos queries identicas que antes hacian loadRecommendationHistory y loadDoctorNotes
+    // trae todas las recomendaciones del paciente en una sola consulta y luego en memoria separa analisis del historial y notas del panel de notas evita las
+    // dos queries identicas que antes hacian loadRecommendationHistory y loadDoctorNotes
     private void loadAllRecommendationsForPatient(String patientId) {
         new Thread(() -> {
             try {
@@ -248,7 +249,8 @@ public class RecommendationsController {
         }
     }
 
-    // se ejecuta al presionar Generar Analisis Clinico trae metricas consulta el clima genera el analisis manda notificaciones si hay progresion de riesgo guarda y luego consulta FDA y USDA de forma asincrona
+    // se ejecuta al presionar Generar Analisis Clinico trae metricas consulta el clima genera el analisis
+    // manda notificaciones si hay progresion de riesgo guarda y luego consulta FDA y USDA de forma asincrona
     @FXML
     protected void onAnalyzePatient() {
         User selected = comboPatients.getValue();
@@ -349,7 +351,8 @@ public class RecommendationsController {
         }).start();
     }
 
-    // consulta el clima actual desde Open-Meteo Celaya Guanajuato
+    // consulta el clima actual desde
+    // Open-Meteo Celaya Guanajuato
     private String fetchWeatherData() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -527,7 +530,9 @@ public class RecommendationsController {
                         StringBuilder sb   = new StringBuilder("FDA — Medicamentos\n\n");
                         for (int i = 0; i < Math.min(3, results.size()); i++) {
                             JsonObject item    = results.get(i).getAsJsonObject();
-                            JsonObject openfda = item.has("openfda") ? item.getAsJsonObject("openfda") : null;
+                            JsonObject openfda;
+                            if (item.has("openfda")) openfda = item.getAsJsonObject("openfda");
+                            else openfda = null;
                             if (openfda != null) {
                                 if (openfda.has("brand_name"))
                                     sb.append("• ").append(openfda.getAsJsonArray("brand_name").get(0).getAsString()).append("\n");
@@ -559,12 +564,21 @@ public class RecommendationsController {
                 .GET()
                 .build();
 
+        // inicia la comunicación con la API externa en un hilo secundario
+        // y se indica explícitamente que la respuesta debe ser procesada como texto plano
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+
+                // una vez que el servidor responde,
+                // descarta la información de red y se queda únicamente con el cuerpo del mensaje (el texto JSON)
                 .thenApply(HttpResponse::body)
                 .thenAccept(responseBody -> {
+
+                    // llama a la función auxiliar para buscar las calorías, proteínas y grasas dentro del JSON
                     String parsed = parseNutritionalResponse(responseBody, foodQuery);
                     Platform.runLater(() -> txtNutrition.setText(parsed));
                 })
+
+                // se activa si se cae el internet, la URL es incorrecta o el servidor de la API falla.
                 .exceptionally(e -> {
                     Platform.runLater(() -> txtNutrition.setText(
                             "Error al conectar con USDA FoodData Central\n" + e.getMessage()));
@@ -581,9 +595,10 @@ public class RecommendationsController {
         if (texto.isEmpty()) return;
 
         // usa el titulo del campo compartido si esta lleno si no genera uno automatico
-        String titulo = (txtRecommendationTitle != null && !txtRecommendationTitle.getText().trim().isEmpty())
-                ? txtRecommendationTitle.getText().trim()
-                : "Nota del Dr. " + loggedInDoctor.getLastName();
+        String titulo;
+        if (txtRecommendationTitle != null && !txtRecommendationTitle.getText().trim().isEmpty())
+            titulo = txtRecommendationTitle.getText().trim();
+        else titulo = "Nota del Dr. " + loggedInDoctor.getLastName();
 
         Recommendation nota = new Recommendation();
         nota.setPatientId  (paciente.getUid());
@@ -626,6 +641,8 @@ public class RecommendationsController {
             return;
         }
 
+        // bloque que determina si no hay un paciente seleccionado o si el titulo/mensaje estan vacios y muestra un
+        // error en lblRecommendationStatus sin lanzar excepciones ni intentar guardar nada
         User patient = comboPatients.getValue();
         if (patient == null) {
             if (lblRecommendationStatus != null) {
@@ -638,6 +655,7 @@ public class RecommendationsController {
         String title   = (txtRecommendationTitle != null) ? txtRecommendationTitle.getText().trim() : "";
         String message = (txtNoteInput           != null) ? txtNoteInput.getText().trim()           : "";
 
+        // si el título está vacío
         if (title.isEmpty() || message.isEmpty()) {
             if (lblRecommendationStatus != null) {
                 lblRecommendationStatus.setText("Completa el título y el mensaje antes de enviar.");
@@ -698,45 +716,58 @@ public class RecommendationsController {
     // parsea la respuesta json de USDA y extrae macronutrientes de los primeros 3 alimentos
     private String parseNutritionalResponse(String jsonBody, String query) {
         try {
+            // convierte el cuerpo JSON recibido en un objeto raíz manipulable
             JsonObject root  = JsonParser.parseString(jsonBody).getAsJsonObject();
+            // obtiene el arreglo de alimentos devuelto por la API; si no existe queda en null
             JsonArray  foods = root.has("foods") ? root.getAsJsonArray("foods") : null;
 
+            // si la API no devolvió resultados, informamos que no hubo coincidencias
             if (foods == null || foods.size() == 0) {
                 return "No se encontraron resultados nutricionales para: " + query;
             }
 
+            // construye el texto que se mostrará en la interfaz con el resumen nutricional
             StringBuilder result = new StringBuilder("USDA FoodData Central\n");
             result.append("Búsqueda: ").append(query).append("\n\n");
 
+            // revisa como máximo 3 alimentos para evitar saturar la vista con demasiada información
             for (int i = 0; i < Math.min(3, foods.size()); i++) {
                 JsonObject food = foods.get(i).getAsJsonObject();
+                // toma la descripción del alimento o usa un valor genérico si no viene en la respuesta
                 String description = food.has("description") ? food.get("description").getAsString() : "N/A";
                 result.append("• ").append(description).append("\n");
 
+                // si el alimento incluye nutrientes, filtramos solo los macronutrientes más relevantes
                 if (food.has("foodNutrients")) {
                     JsonArray nutrients = food.getAsJsonArray("foodNutrients");
                     for (int j = 0; j < nutrients.size(); j++) {
                         JsonObject nutrient = nutrients.get(j).getAsJsonObject();
+                        // ignoramos entradas incompletas para evitar errores al leer el nombre o valor
                         if (!nutrient.has("nutrientName") || !nutrient.has("value")) continue;
                         String name = nutrient.get("nutrientName").getAsString();
+                        // solo mostramos calorías, proteína, carbohidratos y grasa total
                         if (name.equals("Energy") || name.equals("Protein")
                                 || name.equals("Carbohydrate, by difference")
                                 || name.equals("Total lipid (fat)")) {
                             double value = nutrient.get("value").getAsDouble();
                             String unit  = nutrient.has("unitName")
                                     ? nutrient.get("unitName").getAsString() : "";
+                            // agrega cada nutriente encontrado al texto final
                             result.append("  - ").append(name).append(": ")
                                     .append(value).append(" ").append(unit).append("\n");
                         }
                     }
                 }
+                // separa visualmente cada alimento procesado
                 result.append("\n");
             }
 
+            // añade la fuente de datos al final del reporte
             result.append("Fuente: USDA FoodData Central (api.nal.usda.gov)");
             return result.toString();
 
         } catch (Exception e) {
+            // si algo falla al interpretar el JSON, devolvemos el error legible para la interfaz
             return "Error al procesar la respuesta nutricional: " + e.getMessage();
         }
     }
