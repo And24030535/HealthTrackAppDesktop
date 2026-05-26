@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="20.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.itc.healthtrack.controllers.ReportsController">
+    <padding>
+        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+    </padding>
+
+    <Label text="Generador de Reportes Clínicos" textFill="WHITE"
+            style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+    <Label text="Exporta el historial del paciente a un documento oficial." textFill="#cccccc" />
+
+    <VBox spacing="15.0" maxWidth="400.0" styleClass="panel-secundario" style="-fx-padding: 25;">
+        <Label text="Selecciona un paciente:" textFill="WHITE"
+                style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+
+        <ComboBox fx:id="comboPatients" maxWidth="Infinity" promptText="Elige un paciente..." styleClass="form-control"/>
+
+        <Separator style="-fx-background-color: #444444;" />
+
+        <Label text="2. Generar Documento:" textFill="WHITE"
+                style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+
+        <HBox spacing="10.0">
+            <Button text="Exportar a PDF" onAction="#onExportPDF" styleClass="btn, btn-danger" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                    style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <Button text="Exportar a Excel" onAction="#onExportExcel" styleClass="btn-success" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                    style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+        </HBox>
+
+        <Label fx:id="lblStatus" textFill="#4caf50" wrapText="true"
+               style="-fx-font-size: 12px;"/>
+    </VBox>
+</VBox>
