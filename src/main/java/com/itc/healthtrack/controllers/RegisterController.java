@@ -4,8 +4,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.itc.healthtrack.config.AppConfig;
 import com.itc.healthtrack.dao.GenericDAO;
+import com.itc.healthtrack.models.Specialty;
 import com.itc.healthtrack.models.User;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -34,6 +37,8 @@ public class RegisterController {
     @FXML private PasswordField    txtConfirmPassword;
     @FXML private ComboBox<String> comboGender;
     @FXML private ComboBox<String> comboRole;
+    @FXML private Label lblSpecialty;
+    @FXML private ComboBox<Specialty> comboSpecialty;
 
     @FXML private VBox      tokenSection;
     @FXML private Label     lblTokenLabel;
@@ -44,6 +49,8 @@ public class RegisterController {
 
     // unico dao para guardar el nuevo perfil en firestore
     private final GenericDAO<User> userDAO = new GenericDAO<>(User.class, "users");
+    private final GenericDAO<Specialty> specialtyDAO = new GenericDAO<>(Specialty.class, "specialties");
+    private final ObservableList<Specialty> specialtiesList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -51,11 +58,38 @@ public class RegisterController {
         comboRole.getItems().addAll("Paciente", "Doctor", "Admin");
         comboRole.setValue("Paciente");
 
+        if (comboSpecialty != null) {
+            comboSpecialty.setItems(specialtiesList);
+            comboSpecialty.setCellFactory(lv -> new ListCell<>() {
+                @Override protected void updateItem(Specialty s, boolean empty) {
+                    super.updateItem(s, empty);
+                    setText(empty || s == null ? null : s.getName());
+                }
+            });
+            comboSpecialty.setButtonCell(new ListCell<>() {
+                @Override protected void updateItem(Specialty s, boolean empty) {
+                    super.updateItem(s, empty);
+                    setText(empty || s == null ? null : s.getName());
+                }
+            });
+        }
+
+        loadSpecialties();
+
         // mostramos u ocultamos el campo de token segun el rol seleccionado
         comboRole.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             boolean needsToken = "Doctor".equals(newVal) || "Admin".equals(newVal);
             tokenSection.setVisible(needsToken);
             tokenSection.setManaged(needsToken);
+
+            boolean needsSpecialty = "Doctor".equals(newVal);
+            if (lblSpecialty != null && comboSpecialty != null) {
+                lblSpecialty.setVisible(needsSpecialty);
+                lblSpecialty.setManaged(needsSpecialty);
+                comboSpecialty.setVisible(needsSpecialty);
+                comboSpecialty.setManaged(needsSpecialty);
+                if (!needsSpecialty) comboSpecialty.getSelectionModel().clearSelection();
+            }
 
             if (!needsToken) {
                 txtToken.clear();
@@ -80,6 +114,7 @@ public class RegisterController {
         final String roleLabel    = comboRole.getValue();
         final String tokenInput   = txtToken.getText().trim();
         final String heightText   = txtHeight.getText().trim();
+        final Specialty selectedSpecialty = comboSpecialty != null ? comboSpecialty.getValue() : null;
         final String birthDateStr = dpBirthDate.getValue() != null
                 ? dpBirthDate.getValue().toString() : null;
 
@@ -103,6 +138,10 @@ public class RegisterController {
 
         // checamos el token para los roles elevados
         if ("Doctor".equals(roleLabel)) {
+            if (selectedSpecialty == null) {
+                showStatus("Selecciona una especialidad médica para continuar.", false);
+                return;
+            }
             if (tokenInput.isEmpty()) {
                 showTokenAlert("Se requiere el código de acceso médico para registrarse como Doctor.\n"
                         + "Solicítalo al administrador del sistema.");
@@ -169,6 +208,9 @@ public class RegisterController {
                 profile.setGender(gender);
                 if (birthDateStr != null) profile.setBirthDate(birthDateStr);
                 if (finalHeight  != null) profile.setHeight(finalHeight);
+                if ("doctor".equals(mappedRole) && selectedSpecialty != null) {
+                    profile.setSpecialtyId(selectedSpecialty.getId());
+                }
 
                 // auto asignamos un medico si el nuevo usuario es paciente
                 if ("patient".equals(mappedRole)) {
@@ -290,6 +332,23 @@ public class RegisterController {
         lblStatus.setText(message);
         lblStatus.setTextFill(isSuccess ? Color.web("#4caf50") : Color.web("#ff5252"));
         lblStatus.setVisible(true);
+    }
+
+    private void loadSpecialties() {
+        new Thread(() -> {
+            try {
+                List<Specialty> all = specialtyDAO.getAll();
+                Platform.runLater(() -> {
+                    specialtiesList.setAll(all);
+                    if (comboSpecialty != null && all.isEmpty()) {
+                        comboSpecialty.setPromptText("Sin especialidades");
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showStatus("Error al cargar especialidades.", false));
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     // aplica el estilo blanco al panel del dialogo

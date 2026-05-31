@@ -9,6 +9,8 @@ public class User {
     private String lastName;
     // rol patient doctor o admin
     private String role;
+    // especialidad del doctor (id en la coleccion specialties)
+    private String specialtyId;
 
     // campos exclusivos de pacientes
     // fecha de nacimiento como texto para simplicidad en FXML ej 2000-01-15
@@ -37,6 +39,9 @@ public class User {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getSpecialtyId() { return specialtyId; }
+    public void setSpecialtyId(String specialtyId) { this.specialtyId = specialtyId; }
 
     public String getBirthDate() { return birthDate; }
     public void setBirthDate(String birthDate) { this.birthDate = birthDate; }

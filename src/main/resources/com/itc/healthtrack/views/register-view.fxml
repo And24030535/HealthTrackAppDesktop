@@ -54,14 +54,20 @@
             <Label text="Rol *:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
             <ComboBox fx:id="comboRole" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="form-control"/>
 
-            <Label text="Género:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-            <ComboBox fx:id="comboGender" promptText="Seleccionar" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="form-control"/>
+            <Label fx:id="lblSpecialty" text="Especialidad *:" textFill="#cccccc"
+                   GridPane.columnIndex="0" GridPane.rowIndex="6" visible="false" managed="false"/>
+            <ComboBox fx:id="comboSpecialty" promptText="Seleccionar especialidad" maxWidth="Infinity"
+                      GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="form-control"
+                      visible="false" managed="false"/>
 
-            <Label text="Fecha Nac.:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
-            <DatePicker fx:id="dpBirthDate" promptText="Fecha de nacimiento" GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="form-control" maxWidth="Infinity"/>
+            <Label text="Género:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
+            <ComboBox fx:id="comboGender" promptText="Seleccionar" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="form-control"/>
 
-            <Label text="Altura (m):" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
-            <TextField fx:id="txtHeight" promptText="Ej: 1.75" GridPane.columnIndex="1" GridPane.rowIndex="8" styleClass="form-control"/>
+            <Label text="Fecha Nac.:" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
+            <DatePicker fx:id="dpBirthDate" promptText="Fecha de nacimiento" GridPane.columnIndex="1" GridPane.rowIndex="8" styleClass="form-control" maxWidth="Infinity"/>
+
+            <Label text="Altura (m):" textFill="#cccccc" GridPane.columnIndex="0" GridPane.rowIndex="9"/>
+            <TextField fx:id="txtHeight" promptText="Ej: 1.75" GridPane.columnIndex="1" GridPane.rowIndex="9" styleClass="form-control"/>
         </GridPane>
 
         <!-- Token section — visible only when Doctor or Admin role is selected -->
