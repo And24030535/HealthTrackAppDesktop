@@ -1,5 +1,8 @@
 package com.itc.healthtrack.services;
 
+import com.itc.healthtrack.dao.GenericDAO;
+import com.itc.healthtrack.models.EmergencyContact;
+import com.itc.healthtrack.models.Metric;
 import com.itc.healthtrack.models.User;
 
 import java.util.Properties;
@@ -7,6 +10,8 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
 
 // servicio asincrono para enviar correos por smtp
 public class NotificationService {
@@ -50,6 +55,67 @@ public class NotificationService {
             String recipientName = "Dr. " + doctor.getFirstName() + " " + doctor.getLastName();
             sendEmail(doctor.getEmail(), subject, recipientName, message);
         }).start();
+    }
+
+    // notifica al contacto de emergencia principal cuando hay alerta critica
+    public void notifyEmergencyContact(User patient, Metric metric) {
+        if (patient == null || patient.getUid() == null) return;
+        new Thread(() -> {
+            try {
+                GenericDAO<EmergencyContact> contactDao = new GenericDAO<>(
+                        EmergencyContact.class, "users/" + patient.getUid() + "/emergencyContacts");
+                List<EmergencyContact> contacts = contactDao.getAll();
+                if (contacts == null || contacts.isEmpty()) {
+                    System.err.println("[NotificationService] Sin contactos de emergencia para el paciente.");
+                    return;
+                }
+
+                EmergencyContact primary = selectPrimaryContact(contacts);
+                if (primary == null || primary.getPhone() == null || primary.getPhone().isBlank()) {
+                    System.err.println("[NotificationService] Contacto de emergencia sin correo o teléfono válido.");
+                    return;
+                }
+
+                String subject = "HealthTrack - Alerta de Emergencia";
+                String recipientName = primary.getFullName() != null ? primary.getFullName() : "Contacto de Emergencia";
+                String message = buildEmergencyMessage(patient, metric, primary);
+                sendEmail(primary.getPhone(), subject, recipientName, message);
+            } catch (Exception e) {
+                System.err.println("[NotificationService] Error al notificar contacto de emergencia: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private EmergencyContact selectPrimaryContact(List<EmergencyContact> contacts) {
+        return contacts.stream()
+                .filter(contact -> contact != null)
+                .sorted(Comparator.comparing(EmergencyContact::getId,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String buildEmergencyMessage(User patient, Metric metric, EmergencyContact contact) {
+        StringBuilder body = new StringBuilder();
+        String patientName = patient.getFirstName() + " " + patient.getLastName();
+        body.append("Se detectó una alerta crítica en el paciente ").append(patientName).append(".\n\n");
+
+        if (metric != null) {
+            if (metric.getSystolic() != null && metric.getDiastolic() != null) {
+                body.append("Presión arterial: ").append(metric.getSystolic())
+                        .append("/").append(metric.getDiastolic()).append(" mmHg\n");
+            }
+            if (metric.getGlucoseLevel() != null) {
+                body.append("Glucosa: ").append(metric.getGlucoseLevel()).append(" mg/dL\n");
+            }
+        }
+
+        if (contact.getRelationship() != null && !contact.getRelationship().isBlank()) {
+            body.append("\nParentesco: ").append(contact.getRelationship()).append("\n");
+        }
+
+        body.append("\nPor favor contacte al paciente o a su médico lo antes posible.");
+        return body.toString();
     }
 
     // construye y manda el correo

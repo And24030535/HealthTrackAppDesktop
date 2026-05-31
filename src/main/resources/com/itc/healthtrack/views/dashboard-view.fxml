@@ -35,6 +35,7 @@
             <Button fx:id="btnAdminPanel" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowAdmin" styleClass="btn, btn-warning" text="Panel de Admin" />
             <Button fx:id="btnPatientsList" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowPatientsList" styleClass="btn, btn-default" text="Lista de Pacientes" visible="true" managed="true" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowMetrics" styleClass="btn, btn-default" text="Métricas y Gráficos" />
+            <Button fx:id="btnEmergencyContacts" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowEmergencyContacts" styleClass="btn, btn-default" text="Contactos de Emergencia" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowReports" styleClass="btn, btn-default" text="Reportes Clínicos" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowRecommendations" styleClass="btn, btn-default" text="Recomendaciones" />
 

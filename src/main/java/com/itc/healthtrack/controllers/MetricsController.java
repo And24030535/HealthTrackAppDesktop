@@ -301,8 +301,12 @@ public class MetricsController {
 
             // revisamos si las metricas tienen valores peligrosos antes de guardar
             String alert = evaluateClinicalThresholds(metricToProcess, selectedPatient);
+            boolean emergencyAlert = isEmergencyCritical(metricToProcess);
             if (alert != null) {
                 showClinicalAlert(alert);
+            }
+            if (emergencyAlert) {
+                notificationService.notifyEmergencyContact(selectedPatient, metricToProcess);
             }
 
             new Thread(() -> {
@@ -385,6 +389,13 @@ public class MetricsController {
         }
 
         return alert.length() > 0 ? alert.toString().trim() : null;
+    }
+
+    // solo emergencias: hipertension en crisis o glucosa muy elevada
+    private boolean isEmergencyCritical(Metric metric) {
+        if (metric.getSystolic() != null && metric.getSystolic() >= 180) return true;
+        if (metric.getDiastolic() != null && metric.getDiastolic() >= 120) return true;
+        return metric.getGlucoseLevel() != null && metric.getGlucoseLevel() > 300;
     }
 
     // muestra el dialogo de alerta clinica y avisa al paciente y al medico cuando aplica
