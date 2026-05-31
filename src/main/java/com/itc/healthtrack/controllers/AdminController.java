@@ -1,6 +1,7 @@
 package com.itc.healthtrack.controllers;
 
 import com.itc.healthtrack.dao.GenericDAO;
+import com.itc.healthtrack.models.Specialty;
 import com.itc.healthtrack.models.User;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -25,6 +26,7 @@ public class AdminController {
     @FXML private Label lblTotalDoctors;
     @FXML private Label lblTotalPatients;
     @FXML private Label lblStatus;
+    @FXML private Label lblSpecialtyStatus;
 
     @FXML private TableView<User> tableUsers;
     @FXML private TableColumn<User, String> colFirstName;
@@ -35,12 +37,21 @@ public class AdminController {
     @FXML private TextField txtSearch;
     @FXML private ComboBox<String> cbRoleFilter;
 
+    @FXML private TextField txtSpecialtyName;
+    @FXML private TextField txtSpecialtyDescription;
+    @FXML private TableView<Specialty> tableSpecialties;
+    @FXML private TableColumn<Specialty, String> colSpecialtyName;
+    @FXML private TableColumn<Specialty, String> colSpecialtyDescription;
+
     private final GenericDAO<User> userDao = new GenericDAO<>(User.class, "users");
+    private final GenericDAO<Specialty> specialtyDao = new GenericDAO<>(Specialty.class, "specialties");
     private final ObservableList<User> usersObservableList = FXCollections.observableArrayList();
     private FilteredList<User> filteredList;
+    private final ObservableList<Specialty> specialtiesObservableList = FXCollections.observableArrayList();
 
     private User loggedInAdmin;
     private User selectedUser = null;
+    private Specialty selectedSpecialty = null;
 
     // traduce el rol interno al texto que ve el usuario
     private String translateRole(String role) {
@@ -69,6 +80,8 @@ public class AdminController {
         setupSearchControls();
         setupTable();
         loadAllUsers();
+        setupSpecialtiesTable();
+        loadSpecialties();
     }
 
     // configura el filtro de roles para buscar rapido por tipo de usuario
@@ -109,6 +122,42 @@ public class AdminController {
                 lblStatus.setTextFill(Color.web("#aaaaaa"));
             }
         });
+    }
+
+    private void setupSpecialtiesTable() {
+        if (tableSpecialties == null) return;
+        colSpecialtyName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        colSpecialtyDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
+        tableSpecialties.setItems(specialtiesObservableList);
+
+        tableSpecialties.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                selectedSpecialty = newVal;
+                lblSpecialtyStatus.setText("Especialidad seleccionada: " + newVal.getName());
+                lblSpecialtyStatus.setTextFill(Color.web("#aaaaaa"));
+            }
+        });
+    }
+
+    private void loadSpecialties() {
+        if (tableSpecialties == null) return;
+        new Thread(() -> {
+            try {
+                List<Specialty> all = specialtyDao.getAll();
+                Platform.runLater(() -> {
+                    specialtiesObservableList.clear();
+                    specialtiesObservableList.addAll(all);
+                    lblSpecialtyStatus.setText("Especialidades cargadas: " + all.size());
+                    lblSpecialtyStatus.setTextFill(Color.web("#aaaaaa"));
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    lblSpecialtyStatus.setText("Error al cargar especialidades.");
+                    lblSpecialtyStatus.setTextFill(Color.web("#ff5252"));
+                });
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     // carga todos los usuarios en un hilo de fondo y luego actualiza tabla y estadisticas en el hilo fx tambien arma el mapa id medico nombre para mostrarlo en la columna doctor asignado
@@ -207,6 +256,104 @@ public class AdminController {
         txtSearch.clear();
         cbRoleFilter.setValue("Todos");
         applyFilter();
+    }
+
+    @FXML
+    protected void onAddSpecialty() {
+        if (txtSpecialtyName == null) return;
+        String name = txtSpecialtyName.getText() != null ? txtSpecialtyName.getText().trim() : "";
+        String description = txtSpecialtyDescription != null && txtSpecialtyDescription.getText() != null
+                ? txtSpecialtyDescription.getText().trim() : "";
+
+        if (name.isEmpty()) {
+            lblSpecialtyStatus.setText("Ingresa un nombre de especialidad.");
+            lblSpecialtyStatus.setTextFill(Color.web("#ff5252"));
+            return;
+        }
+
+        for (Specialty existing : specialtiesObservableList) {
+            if (existing.getName() != null && existing.getName().equalsIgnoreCase(name)) {
+                lblSpecialtyStatus.setText("Ya existe una especialidad con ese nombre.");
+                lblSpecialtyStatus.setTextFill(Color.web("#ff9800"));
+                return;
+            }
+        }
+
+        lblSpecialtyStatus.setText("Guardando especialidad...");
+        lblSpecialtyStatus.setTextFill(Color.web("#ffffff"));
+
+        new Thread(() -> {
+            try {
+                String id = specialtyDao.createDocumentId();
+                Specialty specialty = new Specialty();
+                specialty.setId(id);
+                specialty.setName(name);
+                specialty.setDescription(description.isEmpty() ? null : description);
+                specialtyDao.save(id, specialty);
+
+                Platform.runLater(() -> {
+                    specialtiesObservableList.add(specialty);
+                    tableSpecialties.refresh();
+                    clearSpecialtyForm();
+                    lblSpecialtyStatus.setText("Especialidad registrada correctamente.");
+                    lblSpecialtyStatus.setTextFill(Color.web("#4caf50"));
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    lblSpecialtyStatus.setText("Error al guardar la especialidad.");
+                    lblSpecialtyStatus.setTextFill(Color.web("#ff5252"));
+                });
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    @FXML
+    protected void onDeleteSpecialty() {
+        if (selectedSpecialty == null) {
+            lblSpecialtyStatus.setText("Selecciona una especialidad para eliminar.");
+            lblSpecialtyStatus.setTextFill(Color.web("#ff9800"));
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Eliminar especialidad");
+        confirm.setHeaderText("Eliminar: " + selectedSpecialty.getName());
+        confirm.setContentText("¿Confirmas la eliminación? Esta acción no se puede deshacer.");
+        applyWhiteStyle(confirm.getDialogPane());
+
+        confirm.showAndWait().ifPresent(btn -> {
+            if (btn != ButtonType.OK) return;
+            lblSpecialtyStatus.setText("Eliminando especialidad...");
+            lblSpecialtyStatus.setTextFill(Color.web("#ffffff"));
+
+            String specialtyId = selectedSpecialty.getId();
+            new Thread(() -> {
+                try {
+                    if (specialtyId != null) {
+                        specialtyDao.delete(specialtyId);
+                    }
+                    Platform.runLater(() -> {
+                        specialtiesObservableList.removeIf(s -> specialtyId != null && specialtyId.equals(s.getId()));
+                        tableSpecialties.getSelectionModel().clearSelection();
+                        selectedSpecialty = null;
+                        lblSpecialtyStatus.setText("Especialidad eliminada.");
+                        lblSpecialtyStatus.setTextFill(Color.web("#4caf50"));
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        lblSpecialtyStatus.setText("Error al eliminar la especialidad.");
+                        lblSpecialtyStatus.setTextFill(Color.web("#ff5252"));
+                    });
+                    e.printStackTrace();
+                }
+            }).start();
+        });
+    }
+
+    private void clearSpecialtyForm() {
+        if (txtSpecialtyName != null) txtSpecialtyName.clear();
+        if (txtSpecialtyDescription != null) txtSpecialtyDescription.clear();
     }
 
     // abre un dialogo con todos los datos del usuario seleccionado muestra campos distintos segun el rol

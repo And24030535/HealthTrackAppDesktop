@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<HBox spacing="20.0" style="-fx-background-color: #121212;"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.itc.healthtrack.controllers.PatientAllergyController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <VBox spacing="15.0" prefWidth="360.0" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <Label text="Alergias del Paciente">
+            <font>
+                <Font name="System Bold" size="18.0"/>
+            </font>
+        </Label>
+
+        <VBox spacing="6.0">
+            <Label text="Paciente:"/>
+            <Label fx:id="lblPatientName" text="—" style="-fx-text-fill: #ffffff; -fx-font-weight: bold;"/>
+        </VBox>
+
+        <GridPane hgap="10" vgap="12">
+            <Label text="Alergia *:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <ComboBox fx:id="comboAllergies" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="form-control"/>
+
+            <Label text="Detección *:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <DatePicker fx:id="dpDetectionDate" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="form-control" maxWidth="Infinity"/>
+
+            <Label text="Notas:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextArea fx:id="txtNotes" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="form-control" prefRowCount="3"/>
+        </GridPane>
+
+        <HBox spacing="10.0" alignment="CENTER">
+            <Button text="Guardar" onAction="#onSaveAllergy" styleClass="btn, btn-primary" prefWidth="100.0"/>
+            <Button text="Eliminar" onAction="#onDeleteAllergy" styleClass="btn, btn-danger" prefWidth="100.0"/>
+            <Button text="Limpiar" onAction="#onClearForm" styleClass="btn, btn-default" prefWidth="100.0"/>
+        </HBox>
+
+        <Label fx:id="lblStatus" wrapText="true"/>
+    </VBox>
+
+    <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+        <Label text="Alergias Registradas">
+            <font>
+                <Font name="System Bold" size="18.0"/>
+            </font>
+        </Label>
+
+        <TableView fx:id="tableAllergies" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colAllergyName" text="Alergia" prefWidth="160"/>
+                <TableColumn fx:id="colSeverity" text="Severidad" prefWidth="100"/>
+                <TableColumn fx:id="colDetectionDate" text="Detección" prefWidth="120"/>
+                <TableColumn fx:id="colNotes" text="Notas" prefWidth="200"/>
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+    </VBox>
+</HBox>

@@ -165,6 +165,9 @@ public class ReportsController {
         if (loggedInDoctor != null
                 && ("doctor".equals(loggedInDoctor.getRole()) || "admin".equals(loggedInDoctor.getRole()))) {
             document.add(new Paragraph("Médico a cargo: " + loggedInDoctor.getFirstName() + " " + loggedInDoctor.getLastName()));
+            if (loggedInDoctor.getNumLicencia() != null && !loggedInDoctor.getNumLicencia().isBlank()) {
+                document.add(new Paragraph("Licencia profesional: " + loggedInDoctor.getNumLicencia()));
+            }
         }
         // salto de linea
         document.add(new Paragraph(" "));

@@ -41,6 +41,7 @@
             <Button text="Guardar"  onAction="#onSavePatient"  styleClass="btn, btn-primary" prefWidth="100.0"/>
             <Button text="Eliminar" onAction="#onDeletePatient" styleClass="btn, btn-danger"  prefWidth="100.0"/>
             <Button text="Limpiar"  onAction="#onClearForm"    styleClass="btn, btn-default" prefWidth="100.0"/>
+            <Button text="Alergias" onAction="#onShowPatientAllergies" styleClass="btn, btn-warning" prefWidth="100.0"/>
         </HBox>
 
     </VBox>
