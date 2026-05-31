@@ -23,6 +23,7 @@ public class DashboardController {
     @FXML private Button btnPatientsList;
     @FXML private Button btnAdminPanel;
     @FXML private Button btnEmergencyContacts;
+    @FXML private Button btnAllergyCatalog;
 
     private User loggedInUser;
 
@@ -52,18 +53,24 @@ public class DashboardController {
             btnPatientsList.setManaged(false);
             btnAdminPanel.setVisible(false);
             btnAdminPanel.setManaged(false);
+            btnAllergyCatalog.setVisible(false);
+            btnAllergyCatalog.setManaged(false);
             btnEmergencyContacts.setVisible(true);
             btnEmergencyContacts.setManaged(true);
             onShowMetrics();
         } else if ("admin".equals(role)) {
             btnEmergencyContacts.setVisible(false);
             btnEmergencyContacts.setManaged(false);
+            btnAllergyCatalog.setVisible(true);
+            btnAllergyCatalog.setManaged(true);
             onShowAdmin();
         } else {
             btnAdminPanel.setVisible(false);
             btnAdminPanel.setManaged(false);
             btnEmergencyContacts.setVisible(false);
             btnEmergencyContacts.setManaged(false);
+            btnAllergyCatalog.setVisible(false);
+            btnAllergyCatalog.setManaged(false);
             onShowPatientsList();
         }
     }
@@ -98,6 +105,11 @@ public class DashboardController {
         changeModule("/com/itc/healthtrack/views/emergency_contacts.fxml", "emergency_contacts");
     }
 
+    @FXML
+    protected void onShowAllergyCatalog() {
+        changeModule("/com/itc/healthtrack/views/allergy_catalog.fxml", "allergy_catalog");
+    }
+
     // carga la vista fxml e instancia el controlador pasandole los datos del usuario
     private void changeModule(String fxmlPath, String moduleType) {
         try {
@@ -128,6 +140,10 @@ public class DashboardController {
                 case "emergency_contacts":
                     EmergencyContactsController ecc = loader.getController();
                     ecc.initData(loggedInUser);
+                    break;
+                case "allergy_catalog":
+                    AllergyCatalogController acc = loader.getController();
+                    acc.initData(loggedInUser);
                     break;
             }
 

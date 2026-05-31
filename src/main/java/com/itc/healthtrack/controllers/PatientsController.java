@@ -8,8 +8,14 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -167,6 +173,40 @@ public class PatientsController {
 
         selectedPatient = null;
         tablePatients.getSelectionModel().clearSelection();
+    }
+
+    @FXML
+    protected void onShowPatientAllergies() {
+        if (selectedPatient == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Alergias del paciente");
+            alert.setHeaderText("Selecciona un paciente");
+            alert.setContentText("Selecciona un paciente de la tabla para ver sus alergias.");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/itc/healthtrack/views/patient_allergies.fxml"));
+            Parent root = loader.load();
+            PatientAllergyController controller = loader.getController();
+            controller.initData(loggedInDoctor, selectedPatient);
+
+            Scene scene = new Scene(root, 900, 600);
+            scene.getStylesheets().add(BootstrapFX.bootstrapFXStylesheet());
+            String cssPath = getClass().getResource("/css/main.css").toExternalForm();
+            scene.getStylesheets().add(cssPath);
+
+            Stage stage = new Stage();
+            stage.setTitle("Alergias del paciente");
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Stage owner = (Stage) tablePatients.getScene().getWindow();
+            stage.initOwner(owner);
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // rellena los campos del formulario con los datos del paciente seleccionado
