@@ -39,6 +39,8 @@ public class RegisterController {
     @FXML private ComboBox<String> comboRole;
     @FXML private Label lblSpecialty;
     @FXML private ComboBox<Specialty> comboSpecialty;
+    @FXML private Label lblLicense;
+    @FXML private TextField txtLicense;
 
     @FXML private VBox      tokenSection;
     @FXML private Label     lblTokenLabel;
@@ -90,6 +92,13 @@ public class RegisterController {
                 comboSpecialty.setManaged(needsSpecialty);
                 if (!needsSpecialty) comboSpecialty.getSelectionModel().clearSelection();
             }
+            if (lblLicense != null && txtLicense != null) {
+                lblLicense.setVisible(needsSpecialty);
+                lblLicense.setManaged(needsSpecialty);
+                txtLicense.setVisible(needsSpecialty);
+                txtLicense.setManaged(needsSpecialty);
+                if (!needsSpecialty) txtLicense.clear();
+            }
 
             if (!needsToken) {
                 txtToken.clear();
@@ -115,6 +124,7 @@ public class RegisterController {
         final String tokenInput   = txtToken.getText().trim();
         final String heightText   = txtHeight.getText().trim();
         final Specialty selectedSpecialty = comboSpecialty != null ? comboSpecialty.getValue() : null;
+        final String licenseText  = txtLicense != null ? txtLicense.getText().trim() : "";
         final String birthDateStr = dpBirthDate.getValue() != null
                 ? dpBirthDate.getValue().toString() : null;
 
@@ -140,6 +150,10 @@ public class RegisterController {
         if ("Doctor".equals(roleLabel)) {
             if (selectedSpecialty == null) {
                 showStatus("Selecciona una especialidad médica para continuar.", false);
+                return;
+            }
+            if (licenseText.isEmpty()) {
+                showStatus("Ingresa el número de licencia profesional.", false);
                 return;
             }
             if (tokenInput.isEmpty()) {
@@ -189,6 +203,16 @@ public class RegisterController {
 
         new Thread(() -> {
             try {
+                if ("doctor".equals(mappedRole)) {
+                    List<User> existingLicenses = userDAO.getByField("numLicencia", licenseText);
+                    if (existingLicenses != null && !existingLicenses.isEmpty()) {
+                        Platform.runLater(() -> {
+                            showStatus("El número de licencia ya está registrado.", false);
+                            btnRegister.setDisable(false);
+                        });
+                        return;
+                    }
+                }
 
                 // creamos la cuenta en firebase auth admin sdk
                 UserRecord.CreateRequest authRequest = new UserRecord.CreateRequest()
@@ -210,6 +234,7 @@ public class RegisterController {
                 if (finalHeight  != null) profile.setHeight(finalHeight);
                 if ("doctor".equals(mappedRole) && selectedSpecialty != null) {
                     profile.setSpecialtyId(selectedSpecialty.getId());
+                    profile.setNumLicencia(licenseText);
                 }
 
                 // auto asignamos un medico si el nuevo usuario es paciente

@@ -11,6 +11,8 @@ public class User {
     private String role;
     // especialidad del doctor (id en la coleccion specialties)
     private String specialtyId;
+    // numero de licencia profesional para medicos
+    private String numLicencia;
 
     // campos exclusivos de pacientes
     // fecha de nacimiento como texto para simplicidad en FXML ej 2000-01-15
@@ -42,6 +44,9 @@ public class User {
 
     public String getSpecialtyId() { return specialtyId; }
     public void setSpecialtyId(String specialtyId) { this.specialtyId = specialtyId; }
+
+    public String getNumLicencia() { return numLicencia; }
+    public void setNumLicencia(String numLicencia) { this.numLicencia = numLicencia; }
 
     public String getBirthDate() { return birthDate; }
     public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
