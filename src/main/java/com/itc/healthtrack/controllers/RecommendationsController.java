@@ -42,7 +42,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-// controlador de recomendaciones clinicas usa solo GenericDAO para hablar con firestore
+// controlador de recomendaciones clinicas usa GenericDAO para hablar con Firestore
 public class RecommendationsController {
 
     @FXML private ComboBox<User>           comboPatients;
@@ -60,8 +60,6 @@ public class RecommendationsController {
     @FXML private Label     lblRecommendationStatus;
     @FXML private VBox      vboxNotesList;
 
-
-    // daos para leer usuarios metricas y notas de firestore
     private final GenericDAO<User>           userDAO           = new GenericDAO<>(User.class, "users");
     private final GenericDAO<Metric>         metricDAO         = new GenericDAO<>(Metric.class, "metrics");
     private final GenericDAO<Recommendation> recommendationDAO = new GenericDAO<>(Recommendation.class, "notas");
@@ -74,14 +72,14 @@ public class RecommendationsController {
     private User loggedInDoctor;
     private ObservableList<Recommendation> historyItems;
 
-
-    // configura la vista segun el rol pacientes solo ven sus datos y el combo deshabilitado medicos y admins ven la lista de pacientes asignados
+    // configura la vista segun el rol
+    // los pacientes solo ven sus datos y el combo deshabilitado
+    // medicos y admins ven la lista de pacientes asignados
     public void initData(User doctor) {
         this.loggedInDoctor = doctor;
         setupHistory();
 
         if ("patient".equals(doctor.getRole())) {
-            // el paciente ve solo sus datos y el combobox sobra
             comboPatients.getItems().add(doctor);
             comboPatients.getSelectionModel().selectFirst();
             comboPatients.setDisable(true);
@@ -112,7 +110,7 @@ public class RecommendationsController {
         }
     }
 
-    // configura el listview del historial con su formato de celda y el listener de seleccion
+    // configura el listview del historial con formato de celda y listener de seleccion
     private void setupHistory() {
         historyItems = FXCollections.observableArrayList();
         listHistory.setItems(historyItems);
@@ -134,14 +132,13 @@ public class RecommendationsController {
             }
         });
 
-        // al seleccionar una entrada del historial mostramos su texto completo en el area de analisis
+        // al seleccionar una entrada del historial mostramos su texto en el area de analisis
         listHistory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && newVal.getMessage() != null) {
                 txtRecommendations.setText(newVal.getMessage());
             }
         });
     }
-
 
     // muestra la seccion de notas medicas
     private void showNotesSection() {
@@ -166,12 +163,12 @@ public class RecommendationsController {
         }).start();
     }
 
-    // trae todas las recomendaciones del paciente en una sola consulta y luego en memoria separa analisis del historial y notas del panel de notas evita las
-    // dos queries identicas que antes hacian loadRecommendationHistory y loadDoctorNotes
+    // trae todas las recomendaciones del paciente en una sola consulta
+    // separa en memoria los analisis del historial y las notas del panel de notas
+    // evita las dos queries identicas que antes hacian loadRecommendationHistory y loadDoctorNotes
     private void loadAllRecommendationsForPatient(String patientId) {
         new Thread(() -> {
             try {
-                // una sola consulta a firestore y separamos por tipo en memoria
                 List<Recommendation> all = recommendationDAO.getByField("patientId", patientId);
 
                 List<Recommendation> analyses = new ArrayList<>();
@@ -203,13 +200,13 @@ public class RecommendationsController {
         }).start();
     }
 
-    // dibuja una tarjeta por cada nota dentro del vboxNotesList si no hay notas muestra un mensaje vacio
+    // dibuja una tarjeta por cada nota dentro del vboxNotesList
+    // si no hay notas muestra un mensaje vacio
     private void renderNoteBlocks(List<Recommendation> notes) {
         if (vboxNotesList == null) return;
         vboxNotesList.getChildren().clear();
 
         if (notes.isEmpty()) {
-            // mensaje cuando el medico aun no ha escrito notas para este paciente
             Label empty = new Label("No hay notas registradas para este paciente.");
             empty.setStyle("-fx-text-fill: #666666; -fx-font-size: 12px; -fx-padding: 14;");
             vboxNotesList.getChildren().add(empty);
@@ -217,20 +214,18 @@ public class RecommendationsController {
         }
 
         for (Recommendation nota : notes) {
-            String titulo = nota.getTitle() != null ? nota.getTitle() : "Nota médica";
+            String titulo = nota.getTitle()      != null ? nota.getTitle()      : "Nota médica";
             String fecha  = nota.getGeneratedAt() != null
                     ? nota.getGeneratedAt().toDate().toString().substring(0, 16) : "";
-            String msg    = nota.getMessage() != null ? nota.getMessage() : "";
+            String msg    = nota.getMessage()    != null ? nota.getMessage()    : "";
 
-            // titulo de la nota en blanco resaltado
             Label lblTitle = new Label(titulo);
             lblTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #e8e8e8; -fx-font-size: 13px;");
 
-            // fecha en azul tenue para no competir con el contenido
+            // fecha en azul tenue para no competir visualmente con el contenido
             Label lblDate = new Label(fecha);
             lblDate.setStyle("-fx-text-fill: #7a9cc8; -fx-font-size: 10px;");
 
-            // contenido de la nota en gris claro con salto de linea
             Label lblMsg = new Label(msg);
             lblMsg.setStyle("-fx-text-fill: #cccccc; -fx-font-size: 12px; -fx-padding: 4 0 0 0;");
             lblMsg.setWrapText(true);
@@ -244,13 +239,13 @@ public class RecommendationsController {
                     + " -fx-background-radius: 6;"
                     + " -fx-padding: 12 14 12 14;");
             card.setMaxWidth(Double.MAX_VALUE);
-
             vboxNotesList.getChildren().add(card);
         }
     }
 
-    // se ejecuta al presionar Generar Analisis Clinico trae metricas consulta el clima genera el analisis
-    // manda notificaciones si hay progresion de riesgo guarda y luego consulta FDA y USDA de forma asincrona
+    // se ejecuta al presionar Generar Analisis Clinico
+    // trae metricas consulta el clima genera el analisis y manda notificaciones si hay progresion de riesgo
+    // luego guarda y consulta FDA y USDA de forma asincrona
     @FXML
     protected void onAnalyzePatient() {
         User selected = comboPatients.getValue();
@@ -262,16 +257,11 @@ public class RecommendationsController {
 
         new Thread(() -> {
             try {
-                // metricas del paciente
                 List<Metric> history = getMetricsByPatient(selected.getUid());
+                String weatherData   = fetchWeatherData();
+                String analysis      = generateAlgorithmicRecommendations(history, weatherData);
 
-                // condiciones climaticas actuales
-                String weatherData = fetchWeatherData();
-
-                // analisis basado en reglas clinicas y clima
-                String analysis = generateAlgorithmicRecommendations(history, weatherData);
-
-                // si las ultimas 3 lecturas muestran progresion de riesgo avisamos
+                // si las ultimas 3 lecturas muestran progresion de riesgo notificamos
                 if (hasRiskProgression(history)) {
                     notificationService.notifyPatient(selected,
                             "Análisis de tendencias detectó una progresión de riesgo en tus métricas. Consulta a tu médico.");
@@ -279,7 +269,6 @@ public class RecommendationsController {
                     if (loggedInDoctor != null
                             && ("doctor".equals(loggedInDoctor.getRole())
                             || "admin".equals(loggedInDoctor.getRole()))) {
-                        // el medico o admin genero el analisis le avisamos directo
                         notificationService.notifyDoctor(loggedInDoctor,
                                 "ALERTA DE TENDENCIA: El paciente " + selected.getFirstName()
                                         + " " + selected.getLastName()
@@ -302,7 +291,7 @@ public class RecommendationsController {
                     }
                 }
 
-                // guarda el analisis en firestore y recarga el historial
+                // guarda el analisis en Firestore y recarga el historial
                 persistRecommendation(selected.getUid(), analysis);
 
                 // consultas asincronas a servicios externos no bloquean el hilo actual
@@ -325,7 +314,7 @@ public class RecommendationsController {
         return metrics;
     }
 
-    // guarda el analisis generado en la coleccion notas de firestore
+    // guarda el analisis generado en la coleccion notas de Firestore
     private void persistRecommendation(String patientId, String analysisText) {
         new Thread(() -> {
             try {
@@ -339,7 +328,6 @@ public class RecommendationsController {
 
                 String newId = recommendationDAO.createDocumentId();
                 rec.setId(newId);
-
                 recommendationDAO.save(newId, rec);
 
                 // recargamos el historial para mostrar la nueva entrada
@@ -351,8 +339,7 @@ public class RecommendationsController {
         }).start();
     }
 
-    // consulta el clima actual desde
-    // Open-Meteo Celaya Guanajuato
+    // consulta el clima actual desde Open-Meteo en Celaya Guanajuato
     private String fetchWeatherData() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -418,7 +405,6 @@ public class RecommendationsController {
         boolean isCold  = weatherLower.contains("nieve") || weatherLower.contains("snow")
                 || weatherLower.contains("frio");
 
-        // presion arterial
         if (latest.getSystolic() != null && latest.getDiastolic() != null) {
             int sys = latest.getSystolic();
             int dia = latest.getDiastolic();
@@ -446,7 +432,6 @@ public class RecommendationsController {
             report.append("\n");
         }
 
-        // glucosa
         if (latest.getGlucoseLevel() != null) {
             double gluc = latest.getGlucoseLevel();
             report.append("+ GLUCOSA (").append(gluc).append(" mg/dL):\n");
@@ -471,7 +456,6 @@ public class RecommendationsController {
             report.append("\n");
         }
 
-        // frecuencia cardiaca
         if (latest.getHeartRate() != null) {
             int hr = latest.getHeartRate();
             report.append("+ FRECUENCIA CARDÍACA (").append(hr).append(" lpm):\n");
@@ -482,7 +466,6 @@ public class RecommendationsController {
             report.append("\n");
         }
 
-        // imc
         if (latest.getBmi() != null) {
             double bmi = latest.getBmi();
             report.append("+ ÍNDICE DE MASA CORPORAL (IMC: ").append(bmi).append("):\n");
@@ -510,7 +493,7 @@ public class RecommendationsController {
         if (latest.getBmi()          != null && latest.getBmi()          >= 30)  return "low calorie high fiber foods";
         return "mediterranean diet healthy foods";
     }
-    
+
     // consulta la api openFDA para traer datos de medicamentos relacionados
     private void fetchExternalMedicalData() {
         Platform.runLater(() -> txtWebService.setText("Conectando con servicio openFDA..."));
@@ -530,9 +513,7 @@ public class RecommendationsController {
                         StringBuilder sb   = new StringBuilder("FDA — Medicamentos\n\n");
                         for (int i = 0; i < Math.min(3, results.size()); i++) {
                             JsonObject item    = results.get(i).getAsJsonObject();
-                            JsonObject openfda;
-                            if (item.has("openfda")) openfda = item.getAsJsonObject("openfda");
-                            else openfda = null;
+                            JsonObject openfda = item.has("openfda") ? item.getAsJsonObject("openfda") : null;
                             if (openfda != null) {
                                 if (openfda.has("brand_name"))
                                     sb.append("• ").append(openfda.getAsJsonArray("brand_name").get(0).getAsString()).append("\n");
@@ -551,7 +532,7 @@ public class RecommendationsController {
                 });
     }
 
-    // consulta USDA FoodData Central para traer info nutricional
+    // consulta USDA FoodData Central para traer informacion nutricional
     private void fetchNutritionalData(String foodQuery) {
         Platform.runLater(() -> txtNutrition.setText("Consultando USDA FoodData Central..."));
 
@@ -564,21 +545,12 @@ public class RecommendationsController {
                 .GET()
                 .build();
 
-        // inicia la comunicación con la API externa en un hilo secundario
-        // y se indica explícitamente que la respuesta debe ser procesada como texto plano
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-
-                // una vez que el servidor responde,
-                // descarta la información de red y se queda únicamente con el cuerpo del mensaje (el texto JSON)
                 .thenApply(HttpResponse::body)
                 .thenAccept(responseBody -> {
-
-                    // llama a la función auxiliar para buscar las calorías, proteínas y grasas dentro del JSON
                     String parsed = parseNutritionalResponse(responseBody, foodQuery);
                     Platform.runLater(() -> txtNutrition.setText(parsed));
                 })
-
-                // se activa si se cae el internet, la URL es incorrecta o el servidor de la API falla.
                 .exceptionally(e -> {
                     Platform.runLater(() -> txtNutrition.setText(
                             "Error al conectar con USDA FoodData Central\n" + e.getMessage()));
@@ -594,7 +566,7 @@ public class RecommendationsController {
         String texto = txtNoteInput.getText().trim();
         if (texto.isEmpty()) return;
 
-        // usa el titulo del campo compartido si esta lleno si no genera uno automatico
+        // usa el titulo del campo si esta lleno si no genera uno automatico
         String titulo;
         if (txtRecommendationTitle != null && !txtRecommendationTitle.getText().trim().isEmpty())
             titulo = txtRecommendationTitle.getText().trim();
@@ -629,7 +601,7 @@ public class RecommendationsController {
         }).start();
     }
 
-    // guarda una recomendacion formal en firestore y la manda al paciente por correo
+    // guarda una recomendacion formal en Firestore y la envia al paciente por correo
     @FXML
     protected void onSendRecommendation() {
         // solo los medicos pueden mandar recomendaciones por email
@@ -641,8 +613,6 @@ public class RecommendationsController {
             return;
         }
 
-        // bloque que determina si no hay un paciente seleccionado o si el titulo/mensaje estan vacios y muestra un
-        // error en lblRecommendationStatus sin lanzar excepciones ni intentar guardar nada
         User patient = comboPatients.getValue();
         if (patient == null) {
             if (lblRecommendationStatus != null) {
@@ -655,7 +625,6 @@ public class RecommendationsController {
         String title   = (txtRecommendationTitle != null) ? txtRecommendationTitle.getText().trim() : "";
         String message = (txtNoteInput           != null) ? txtNoteInput.getText().trim()           : "";
 
-        // si el título está vacío
         if (title.isEmpty() || message.isEmpty()) {
             if (lblRecommendationStatus != null) {
                 lblRecommendationStatus.setText("Completa el título y el mensaje antes de enviar.");
@@ -671,7 +640,6 @@ public class RecommendationsController {
             lblRecommendationStatus.setTextFill(javafx.scene.paint.Color.web("#ffffff"));
         }
 
-        // armamos el objeto Recommendation antes de lanzar el hilo
         Recommendation rec = new Recommendation();
         rec.setPatientId  (patient.getUid());
         rec.setDoctorId   (loggedInDoctor.getUid());
@@ -683,12 +651,11 @@ public class RecommendationsController {
 
         new Thread(() -> {
             try {
-                // guardamos en firestore
                 String newId = recommendationDAO.createDocumentId();
                 rec.setId(newId);
                 recommendationDAO.save(newId, rec);
 
-                // mandamos correo al paciente
+                // mandamos el correo al paciente con el contenido de la recomendacion
                 notificationService.sendRecommendationEmail(patient, doctorName, title, message);
 
                 Platform.runLater(() -> {
@@ -716,63 +683,52 @@ public class RecommendationsController {
     // parsea la respuesta json de USDA y extrae macronutrientes de los primeros 3 alimentos
     private String parseNutritionalResponse(String jsonBody, String query) {
         try {
-            // convierte el cuerpo JSON recibido en un objeto raíz manipulable
             JsonObject root  = JsonParser.parseString(jsonBody).getAsJsonObject();
-            // obtiene el arreglo de alimentos devuelto por la API; si no existe queda en null
             JsonArray  foods = root.has("foods") ? root.getAsJsonArray("foods") : null;
 
-            // si la API no devolvió resultados, informamos que no hubo coincidencias
             if (foods == null || foods.size() == 0) {
                 return "No se encontraron resultados nutricionales para: " + query;
             }
 
-            // construye el texto que se mostrará en la interfaz con el resumen nutricional
             StringBuilder result = new StringBuilder("USDA FoodData Central\n");
             result.append("Búsqueda: ").append(query).append("\n\n");
 
-            // revisa como máximo 3 alimentos para evitar saturar la vista con demasiada información
             for (int i = 0; i < Math.min(3, foods.size()); i++) {
                 JsonObject food = foods.get(i).getAsJsonObject();
-                // toma la descripción del alimento o usa un valor genérico si no viene en la respuesta
                 String description = food.has("description") ? food.get("description").getAsString() : "N/A";
                 result.append("• ").append(description).append("\n");
 
-                // si el alimento incluye nutrientes, filtramos solo los macronutrientes más relevantes
                 if (food.has("foodNutrients")) {
                     JsonArray nutrients = food.getAsJsonArray("foodNutrients");
                     for (int j = 0; j < nutrients.size(); j++) {
                         JsonObject nutrient = nutrients.get(j).getAsJsonObject();
-                        // ignoramos entradas incompletas para evitar errores al leer el nombre o valor
                         if (!nutrient.has("nutrientName") || !nutrient.has("value")) continue;
                         String name = nutrient.get("nutrientName").getAsString();
-                        // solo mostramos calorías, proteína, carbohidratos y grasa total
+                        // solo mostramos calorias proteina carbohidratos y grasa total
                         if (name.equals("Energy") || name.equals("Protein")
                                 || name.equals("Carbohydrate, by difference")
                                 || name.equals("Total lipid (fat)")) {
                             double value = nutrient.get("value").getAsDouble();
                             String unit  = nutrient.has("unitName")
                                     ? nutrient.get("unitName").getAsString() : "";
-                            // agrega cada nutriente encontrado al texto final
                             result.append("  - ").append(name).append(": ")
                                     .append(value).append(" ").append(unit).append("\n");
                         }
                     }
                 }
-                // separa visualmente cada alimento procesado
                 result.append("\n");
             }
 
-            // añade la fuente de datos al final del reporte
             result.append("Fuente: USDA FoodData Central (api.nal.usda.gov)");
             return result.toString();
 
         } catch (Exception e) {
-            // si algo falla al interpretar el JSON, devolvemos el error legible para la interfaz
             return "Error al procesar la respuesta nutricional: " + e.getMessage();
         }
     }
 
-    // se ejecuta al presionar Exportar Excel checa que haya paciente abre el filechooser y en un hilo de fondo recopila metricas recomendaciones y alertas para generar el xlsx
+    // se ejecuta al presionar Exportar Excel
+    // checa que haya paciente abre el filechooser y recopila metricas recomendaciones y alertas para generar el xlsx
     @FXML
     protected void onExportExcel() {
         User selected = comboPatients.getValue();
@@ -785,7 +741,6 @@ public class RecommendationsController {
             return;
         }
 
-        // abrimos el dialogo de guardado con nombre por defecto
         FileChooser fc = new FileChooser();
         fc.setTitle("Guardar Reporte Excel");
         fc.setInitialFileName("HealthTrack_"
@@ -797,7 +752,6 @@ public class RecommendationsController {
 
         Stage stage = (Stage) comboPatients.getScene().getWindow();
         File archivo = fc.showSaveDialog(stage);
-        // si el usuario cancela el dialogo salimos
         if (archivo == null) return;
 
         // capturamos el texto del diagnostico en el hilo fx antes de pasar al hilo de fondo
@@ -805,7 +759,6 @@ public class RecommendationsController {
 
         new Thread(() -> {
             try {
-                // juntamos todos los datos para las tres hojas
                 List<Metric>         metricas = getMetricsByPatient(selected.getUid());
                 List<Recommendation> recs     = getRecommendationsByPatient(selected.getUid());
                 String               alertas  = buildAlertsText(metricas);
@@ -833,9 +786,9 @@ public class RecommendationsController {
         }).start();
     }
 
-    // trae las recomendaciones clinicas del paciente excluyendo las notas manuales del medico ordenadas de mas reciente a mas antigua
+    // trae las recomendaciones del paciente excluyendo las notas manuales del medico ordenadas de mas reciente a mas antigua
     private List<Recommendation> getRecommendationsByPatient(String patientId) throws Exception {
-        List<Recommendation> todas = recommendationDAO.getByField("patientId", patientId);
+        List<Recommendation> todas   = recommendationDAO.getByField("patientId", patientId);
         List<Recommendation> analisis = new ArrayList<>();
         for (Recommendation r : todas) {
             if (!"note".equals(r.getType())) analisis.add(r);
@@ -844,13 +797,12 @@ public class RecommendationsController {
         return analisis;
     }
 
-    // genera el xlsx con tres hojas analisis del paciente con resumen y alertas historial de metricas y recomendaciones guardadas en firestore
+    // genera el xlsx con tres hojas analisis del paciente historial de metricas y recomendaciones
     private void generateExcel(File archivo, String diagnostico, String alertas,
                                 List<Metric> metricas, List<Recommendation> recs) throws Exception {
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
 
-            // estilo compartido para encabezados de columna
             CellStyle estiloEncabezado = workbook.createCellStyle();
             Font fuenteEncabezado = workbook.createFont();
             fuenteEncabezado.setBold(true);
@@ -861,68 +813,50 @@ public class RecommendationsController {
             estiloEncabezado.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             estiloEncabezado.setBorderBottom(BorderStyle.THIN);
 
-            // estilo para el titulo principal de cada hoja
             CellStyle estiloTitulo = workbook.createCellStyle();
             Font fuenteTitulo = workbook.createFont();
             fuenteTitulo.setBold(true);
             fuenteTitulo.setFontHeightInPoints((short) 14);
             estiloTitulo.setFont(fuenteTitulo);
 
-            // hoja 1 analisis del paciente
+            // hoja 1 analisis del paciente con diagnostico y alertas
             Sheet hoja1 = workbook.createSheet("Análisis del Paciente");
             int fila = 0;
 
-            Row filaTitulo = hoja1.createRow(fila++);
-            Cell celdaTitulo = filaTitulo.createCell(0);
+            Cell celdaTitulo = hoja1.createRow(fila++).createCell(0);
             celdaTitulo.setCellValue("REPORTE CLÍNICO — HealthTrack");
             celdaTitulo.setCellStyle(estiloTitulo);
 
-            // fecha de generacion del reporte
             hoja1.createRow(fila++).createCell(0).setCellValue(
                     "Generado el: " + LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-            // fila en blanco separadora
             fila++;
 
-            // seccion diagnostico y analisis clinico
             Cell celdaDiagHeader = hoja1.createRow(fila++).createCell(0);
             celdaDiagHeader.setCellValue("DIAGNÓSTICO Y ANÁLISIS CLÍNICO");
             celdaDiagHeader.setCellStyle(estiloEncabezado);
 
             String textoAnalisis = (diagnostico != null && !diagnostico.isEmpty())
                     ? diagnostico : "No se ha generado ningún análisis para este paciente.";
-            for (String linea : textoAnalisis.split("\n")) {
-                hoja1.createRow(fila++).createCell(0).setCellValue(linea);
-            }
+            for (String linea : textoAnalisis.split("\n")) hoja1.createRow(fila++).createCell(0).setCellValue(linea);
 
-            // fila en blanco separadora
             fila++;
 
-            // seccion alertas detectadas
             Cell celdaAlertasHeader = hoja1.createRow(fila++).createCell(0);
             celdaAlertasHeader.setCellValue("ALERTAS DETECTADAS");
             celdaAlertasHeader.setCellStyle(estiloEncabezado);
 
-            for (String linea : alertas.split("\n")) {
-                hoja1.createRow(fila++).createCell(0).setCellValue(linea);
-            }
+            for (String linea : alertas.split("\n")) hoja1.createRow(fila++).createCell(0).setCellValue(linea);
 
-            // columna ancha para texto largo
             hoja1.setColumnWidth(0, 90 * 256);
 
-            // hoja 2 historial de metricas
+            // hoja 2 historial de metricas con una fila por registro
             Sheet hoja2 = workbook.createSheet("Historial de Métricas");
             String[] columnasMetricas = {
-                "Fecha",
-                "Sistólica (mmHg)",
-                "Diastólica (mmHg)",
-                "Frec. Cardíaca (lpm)",
-                "Glucosa (mg/dL)",
-                "Peso (kg)",
-                "IMC"
+                "Fecha", "Sistólica (mmHg)", "Diastólica (mmHg)",
+                "Frec. Cardíaca (lpm)", "Glucosa (mg/dL)", "Peso (kg)", "IMC"
             };
 
-            // fila de encabezados
             Row filaEncMetrica = hoja2.createRow(0);
             for (int i = 0; i < columnasMetricas.length; i++) {
                 Cell c = filaEncMetrica.createCell(i);
@@ -930,7 +864,6 @@ public class RecommendationsController {
                 c.setCellStyle(estiloEncabezado);
             }
 
-            // filas de datos
             int filaDato = 1;
             for (Metric m : metricas) {
                 Row fila2 = hoja2.createRow(filaDato++);
@@ -944,11 +877,9 @@ public class RecommendationsController {
                 fila2.createCell(5).setCellValue(m.getWeight()       != null ? m.getWeight()       : 0.0);
                 fila2.createCell(6).setCellValue(m.getBmi()          != null ? m.getBmi()          : 0.0);
             }
-
-            // ajustamos el ancho automatico de todas las columnas
             for (int i = 0; i < columnasMetricas.length; i++) hoja2.autoSizeColumn(i);
 
-            // hoja 3 recomendaciones
+            // hoja 3 recomendaciones con titulo tipo fecha y mensaje
             Sheet hoja3 = workbook.createSheet("Recomendaciones");
             String[] columnasRec = { "Fecha", "Tipo", "Título", "Mensaje" };
 
@@ -967,14 +898,10 @@ public class RecommendationsController {
                 filaR.createCell(0).setCellValue(fecha);
                 filaR.createCell(1).setCellValue(rec.getType()  != null ? rec.getType()  : "");
                 filaR.createCell(2).setCellValue(rec.getTitle() != null ? rec.getTitle() : "");
-
                 // truncamos mensajes muy largos para no saturar la celda
                 String msg = rec.getMessage() != null ? rec.getMessage() : "";
-                filaR.createCell(3).setCellValue(
-                        msg.length() > 500 ? msg.substring(0, 500) + "..." : msg);
+                filaR.createCell(3).setCellValue(msg.length() > 500 ? msg.substring(0, 500) + "..." : msg);
             }
-
-            // autoajuste de las primeras tres columnas la cuarta queda fija
             for (int i = 0; i < 3; i++) hoja3.autoSizeColumn(i);
             hoja3.setColumnWidth(3, 60 * 256);
 
@@ -984,7 +911,9 @@ public class RecommendationsController {
         }
     }
 
-    // arma el texto de alertas activas a partir de la metrica mas reciente evalua presion glucosa frecuencia cardiaca e imc la lista debe venir ordenada desc
+    // arma el texto de alertas activas a partir de la metrica mas reciente
+    // evalua presion glucosa frecuencia cardiaca e imc
+    // la lista debe venir ordenada desc con la entrada mas reciente en el indice 0
     private static String buildAlertsText(List<Metric> history) {
         if (history == null || history.isEmpty()) {
             return "Sin métricas registradas — no se pueden calcular alertas.";
@@ -993,7 +922,6 @@ public class RecommendationsController {
         Metric latest = history.get(0);
         StringBuilder sb = new StringBuilder();
 
-        // presion arterial
         if (latest.getSystolic() != null && latest.getDiastolic() != null) {
             int sys = latest.getSystolic();
             int dia = latest.getDiastolic();
@@ -1009,7 +937,6 @@ public class RecommendationsController {
             }
         }
 
-        // glucosa
         if (latest.getGlucoseLevel() != null) {
             double gluc = latest.getGlucoseLevel();
             if (gluc > 300) {
@@ -1022,39 +949,27 @@ public class RecommendationsController {
             }
         }
 
-        // frecuencia cardiaca
         if (latest.getHeartRate() != null) {
             int hr = latest.getHeartRate();
-            if (hr > 120) {
-                sb.append("• ALERTA — Taquicardia (").append(hr).append(" lpm)\n");
-            } else if (hr < 50) {
-                sb.append("• ALERTA — Bradicardia (").append(hr).append(" lpm)\n");
-            }
+            if (hr > 120) sb.append("• ALERTA — Taquicardia (").append(hr).append(" lpm)\n");
+            else if (hr < 50) sb.append("• ALERTA — Bradicardia (").append(hr).append(" lpm)\n");
         }
 
-        // indice de masa corporal
         if (latest.getBmi() != null) {
             double bmi = latest.getBmi();
-            if (bmi >= 40) {
-                sb.append("• ALERTA — Obesidad mórbida (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 35) {
-                sb.append("• ALERTA — Obesidad severa (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 30) {
-                sb.append("• AVISO — Obesidad clase I (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 25) {
-                sb.append("• AVISO — Sobrepeso (IMC: ").append(bmi).append(")\n");
-            } else if (bmi < 18.5) {
-                sb.append("• AVISO — Bajo peso (IMC: ").append(bmi).append(")\n");
-            }
+            if      (bmi >= 40) sb.append("• ALERTA — Obesidad mórbida (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 35) sb.append("• ALERTA — Obesidad severa (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 30) sb.append("• AVISO — Obesidad clase I (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 25) sb.append("• AVISO — Sobrepeso (IMC: ").append(bmi).append(")\n");
+            else if (bmi < 18.5) sb.append("• AVISO — Bajo peso (IMC: ").append(bmi).append(")\n");
         }
 
-        if (sb.length() == 0) {
-            return "No se detectaron valores fuera del rango clínico normal.";
-        }
-        return sb.toString().trim();
+        return sb.length() == 0
+                ? "No se detectaron valores fuera del rango clínico normal."
+                : sb.toString().trim();
     }
 
-    // ordena las metricas de mas reciente a mas antigua las que no tienen timestamp van al final
+    // ordena las metricas de mas reciente a mas antigua y las sin timestamp van al final
     private static void sortByTimestampDesc(List<Metric> metrics) {
         metrics.sort((a, b) -> {
             if (a.getTimestamp() == null && b.getTimestamp() == null) return 0;
@@ -1064,7 +979,7 @@ public class RecommendationsController {
         });
     }
 
-    // ordena las recomendaciones de mas reciente a mas antigua las que no tienen fecha van al final
+    // ordena las recomendaciones de mas reciente a mas antigua y las sin fecha van al final
     private static void sortByDateDesc(List<Recommendation> recommendations) {
         Collections.sort(recommendations, new Comparator<Recommendation>() {
             @Override

@@ -1,20 +1,19 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 4 — Alergia de un paciente
-// se guarda en la subcoleccion firestore users/{patientId}/allergies
+// alergia de un paciente guardada en la subcoleccion firestore users/{patientId}/allergies
 public class Allergy {
 
-    // id del documento en firestore tambien guardado como campo
+    // id del documento en firestore tambien guardado como campo del documento
     private String id;
-    // id del paciente dueno de la alergia (desnormalizado, vive bajo su subcoleccion)
+    // id del paciente dueno de la alergia desnormalizado porque vive bajo su subcoleccion
     private String patientId;
-    // nombre del alergeno ej Penicilina, Maní, Polen
+    // nombre del alergeno por ejemplo Penicilina Mani o Polen
     private String allergen;
-    // tipo de alergia ej Medicamento, Alimento, Ambiental, Otro
+    // tipo de alergia por ejemplo Medicamento Alimento Ambiental u Otro
     private String type;
-    // gravedad ej Leve, Moderada, Severa
+    // nivel de gravedad por ejemplo Leve Moderada o Severa
     private String severity;
-    // reaccion que provoca ej Urticaria, Anafilaxia
+    // reaccion que provoca por ejemplo Urticaria o Anafilaxia
     private String reaction;
 
     public Allergy() {}

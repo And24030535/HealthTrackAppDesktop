@@ -1,15 +1,15 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 6 — detalle de un tratamiento: un medicamento con su dosis y frecuencia
-// vive en la subcoleccion "treatments/{treatmentId}/details"
-// FEATURE 7: medicineId referencia al catalogo; medicineName se desnormaliza para no perder
-//            el nombre si el medicamento fuera desactivado en el futuro
+// detalle de un tratamiento representa un medicamento con su dosis y frecuencia
+// vive en la subcoleccion treatments/{treatmentId}/details
+// medicineId referencia al catalogo y medicineName se desnormaliza para preservar el nombre
+// aunque el medicamento sea desactivado en el futuro el historial sigue siendo legible
 public class TreatmentDetail {
 
     private String id;
     private String treatmentId;
-    private String medicineId;    // id del documento en la coleccion "medicines"
-    private String medicineName;  // nombre desnormalizado para display historico
+    private String medicineId;    // id del documento en la coleccion medicines
+    private String medicineName;  // nombre desnormalizado para mantener legible el historial
     private String dose;
     private String frequency;
 

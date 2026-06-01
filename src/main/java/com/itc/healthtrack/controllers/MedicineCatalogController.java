@@ -3,6 +3,7 @@ package com.itc.healthtrack.controllers;
 import com.itc.healthtrack.dao.GenericDAO;
 import com.itc.healthtrack.models.Medicine;
 import com.itc.healthtrack.models.User;
+import com.itc.healthtrack.utils.DialogUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,7 +15,7 @@ import javafx.scene.paint.Color;
 import java.util.Comparator;
 import java.util.List;
 
-// FEATURE 7 — Catalogo de medicamentos (solo admin)
+// catalogo de medicamentos disponible solo para el admin
 // el admin agrega medicamentos y puede desactivarlos o reactivarlos
 // los medicamentos nunca se eliminan para preservar el historial de tratamientos
 public class MedicineCatalogController {
@@ -23,7 +24,7 @@ public class MedicineCatalogController {
     @FXML private TextField txtCommercialName;
     @FXML private TextField txtManufacturer;
 
-    @FXML private TableView<Medicine>         tableMedicines;
+    @FXML private TableView<Medicine>            tableMedicines;
     @FXML private TableColumn<Medicine, String>  colGenericName;
     @FXML private TableColumn<Medicine, String>  colCommercialName;
     @FXML private TableColumn<Medicine, String>  colManufacturer;
@@ -31,8 +32,7 @@ public class MedicineCatalogController {
 
     @FXML private Label lblStatus;
 
-    private final GenericDAO<Medicine> medicineDao =
-            new GenericDAO<>(Medicine.class, "medicines");
+    private final GenericDAO<Medicine> medicineDao = new GenericDAO<>(Medicine.class, "medicines");
     private final ObservableList<Medicine> medicineList = FXCollections.observableArrayList();
 
     private Medicine selectedMedicine;
@@ -47,12 +47,12 @@ public class MedicineCatalogController {
         colGenericName.setCellValueFactory(new PropertyValueFactory<>("genericName"));
         colCommercialName.setCellValueFactory(new PropertyValueFactory<>("commercialName"));
         colManufacturer.setCellValueFactory(new PropertyValueFactory<>("manufacturer"));
-        // la columna estado deriva de active boolean
+        // columna estado derivada del campo active boolean
         colActive.setCellValueFactory(data ->
             new javafx.beans.property.SimpleStringProperty(
                 data.getValue().isActive() ? "Activo" : "Inactivo"));
 
-        // coloreamos la fila segun el estado activo/inactivo
+        // coloreamos la fila segun el estado activo o inactivo del medicamento
         tableMedicines.setRowFactory(tv -> new TableRow<Medicine>() {
             @Override
             protected void updateItem(Medicine item, boolean empty) {
@@ -83,13 +83,12 @@ public class MedicineCatalogController {
             });
     }
 
-    // carga todos los medicamentos del catalogo (activos e inactivos)
+    // carga todos los medicamentos del catalogo activos e inactivos
     private void loadAllMedicines() {
         new Thread(() -> {
             try {
                 List<Medicine> all = medicineDao.getAll();
-                all.sort(Comparator.comparing(Medicine::getGenericName,
-                        String.CASE_INSENSITIVE_ORDER));
+                all.sort(Comparator.comparing(Medicine::getGenericName, String.CASE_INSENSITIVE_ORDER));
                 Platform.runLater(() -> {
                     medicineList.setAll(all);
                     setStatus(all.size() + " medicamento(s) en el catálogo.", false);
@@ -101,19 +100,19 @@ public class MedicineCatalogController {
         }).start();
     }
 
-    // agrega un nuevo medicamento validando nombre generico obligatorio y sin duplicados
+    // agrega un medicamento nuevo validando nombre generico obligatorio y sin duplicados
     @FXML
     private void onAddMedicine() {
-        String generic     = txtGenericName.getText()    != null ? txtGenericName.getText().trim()    : "";
-        String commercial  = txtCommercialName.getText() != null ? txtCommercialName.getText().trim() : "";
-        String manufacturer = txtManufacturer.getText() != null ? txtManufacturer.getText().trim()   : "";
+        String generic      = txtGenericName.getText()    != null ? txtGenericName.getText().trim()    : "";
+        String commercial   = txtCommercialName.getText() != null ? txtCommercialName.getText().trim() : "";
+        String manufacturer = txtManufacturer.getText()   != null ? txtManufacturer.getText().trim()   : "";
 
         if (generic.isEmpty()) {
             setStatus("El nombre genérico es obligatorio.", true);
             return;
         }
 
-        // no permitimos duplicados en nombre generico (ignorando mayusculas)
+        // no permitimos duplicados en nombre generico ignorando mayusculas
         boolean duplicate = medicineList.stream()
             .anyMatch(m -> m.getGenericName() != null
                        && m.getGenericName().equalsIgnoreCase(generic));
@@ -131,7 +130,7 @@ public class MedicineCatalogController {
                 medicineDao.save(id, m);
                 Platform.runLater(() -> {
                     medicineList.add(m);
-                    // reordenamos la lista tras insertar
+                    // reordenamos la lista tras insertar para mantener el orden alfabetico
                     medicineList.sort(Comparator.comparing(Medicine::getGenericName,
                             String.CASE_INSENSITIVE_ORDER));
                     clearForm();
@@ -144,7 +143,7 @@ public class MedicineCatalogController {
         }).start();
     }
 
-    // marca el medicamento seleccionado como inactivo (desactivado, no eliminado)
+    // marca el medicamento seleccionado como inactivo sin eliminarlo
     @FXML
     private void onDeactivateMedicine() {
         if (selectedMedicine == null) {
@@ -161,7 +160,7 @@ public class MedicineCatalogController {
         confirm.setHeaderText("Desactivar \"" + selectedMedicine.getGenericName() + "\"");
         confirm.setContentText("El medicamento dejará de aparecer en las recetas nuevas.\n"
                 + "Los tratamientos existentes no se verán afectados.");
-        applyWhiteStyle(confirm.getDialogPane());
+        DialogUtils.applyWhiteStyle(confirm.getDialogPane());
         confirm.showAndWait().ifPresent(bt -> {
             if (bt == ButtonType.OK) changeActiveState(selectedMedicine, false);
         });
@@ -181,14 +180,14 @@ public class MedicineCatalogController {
         changeActiveState(selectedMedicine, true);
     }
 
-    // persiste el cambio de estado activo/inactivo en firestore
+    // persiste el cambio de estado activo o inactivo en Firestore con rollback visual si falla
     private void changeActiveState(Medicine medicine, boolean active) {
         medicine.setActive(active);
         new Thread(() -> {
             try {
                 medicineDao.save(medicine.getId(), medicine);
                 Platform.runLater(() -> {
-                    // refrescamos la tabla sin recargar firestore
+                    // refrescamos la tabla sin recargar Firestore
                     tableMedicines.refresh();
                     String verb = active ? "reactivado" : "desactivado";
                     setStatus("\"" + medicine.getGenericName() + "\" " + verb + ".", false);
@@ -213,26 +212,5 @@ public class MedicineCatalogController {
     private void setStatus(String msg, boolean error) {
         lblStatus.setText(msg);
         lblStatus.setTextFill(error ? Color.ORANGERED : Color.web("#aaaaaa"));
-    }
-
-    // mismo estilo blanco que el resto de la app
-    private static void applyWhiteStyle(DialogPane dp) {
-        dp.setStyle("-fx-background-color: #ffffff; -fx-font-size: 13px;");
-        javafx.scene.Node content = dp.lookup(".content.label");
-        if (content != null) content.setStyle("-fx-text-fill: #222222;");
-        javafx.scene.Node header = dp.lookup(".header-panel");
-        if (header != null) header.setStyle("-fx-background-color: #f5f5f5;");
-        javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
-        if (headerLabel != null) headerLabel.setStyle("-fx-text-fill: #111111; -fx-font-weight: bold;");
-        for (ButtonType bt : dp.getButtonTypes()) {
-            javafx.scene.Node node = dp.lookupButton(bt);
-            if (node instanceof Button btn) {
-                boolean isCancel = (bt == ButtonType.CANCEL || bt == ButtonType.NO
-                        || bt == ButtonType.CLOSE);
-                btn.setStyle("-fx-background-color: " + (isCancel ? "#9e9e9e" : "#2196f3")
-                        + "; -fx-text-fill: white; -fx-cursor: hand;"
-                        + " -fx-padding: 6 22; -fx-background-radius: 4;");
-            }
-        }
     }
 }

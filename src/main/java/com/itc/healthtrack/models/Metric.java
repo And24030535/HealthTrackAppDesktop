@@ -13,7 +13,7 @@ public class Metric {
     private Double weight;
     private Double bmi;
     private Double glucoseLevel;
-    // campos que escribe la app android y deben existir para evitar warnings de firestore
+    // campos que escribe la app android y deben existir aqui para evitar warnings de firestore
     private String notes;
     private String metricType;
 

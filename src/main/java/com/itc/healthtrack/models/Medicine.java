@@ -1,8 +1,8 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 7 — medicamento del catalogo en la coleccion "medicines"
-// los medicamentos retirados nunca se eliminan: se desactivan con active=false
-// para preservar la integridad del historial de tratamientos
+// medicamento del catalogo guardado en la coleccion medicines
+// los medicamentos retirados nunca se eliminan sino que se desactivan con active false
+// esto preserva la integridad del historial de tratamientos anteriores
 public class Medicine {
 
     private String id;
@@ -38,7 +38,7 @@ public class Medicine {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
 
-    // texto que aparece en el ComboBox del medico al recetar
+    // texto que aparece en el ComboBox del medico al seleccionar un medicamento para recetar
     @Override
     public String toString() {
         if (commercialName != null && !commercialName.isBlank()) {

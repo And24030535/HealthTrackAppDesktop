@@ -1,29 +1,29 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 5 — Cita medica entre un paciente y su medico
-// se guarda en la coleccion top-level "appointments" para que paciente y medico la consulten por su id
+// cita medica entre un paciente y su medico guardada en la coleccion top level appointments
+// se usa una coleccion top level para que tanto el paciente como el medico puedan consultarla por su id
 public class Appointment {
 
-    // id del documento en firestore tambien guardado como campo
+    // id del documento en firestore tambien guardado como campo del documento
     private String id;
 
-    // paciente que solicita la cita (ids desnormalizados con su nombre para mostrar sin consulta extra)
+    // ids y nombres desnormalizados del paciente para mostrar en la ui sin consulta extra a firestore
     private String patientId;
     private String patientName;
 
-    // medico que atendera la cita
+    // ids y nombre del medico que atendara la cita
     private String doctorId;
     private String doctorName;
 
-    // fecha como texto yyyy-MM-dd y hora como texto HH:mm para ordenar y mostrar sin lios de zona horaria
+    // fecha y hora guardadas como texto para ordenar y mostrar sin problemas de zona horaria
     private String date;
     private String time;
 
     // motivo de la consulta
     private String reason;
-    // estado de la cita Pendiente, Confirmada, Cancelada o Completada
+    // estado puede ser Pendiente Confirmada Cancelada o Completada
     private String status;
-    // notas del medico (opcional)
+    // notas opcionales que el medico puede agregar
     private String notes;
 
     public Appointment() {}

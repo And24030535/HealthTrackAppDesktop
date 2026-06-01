@@ -33,10 +33,13 @@
                 <Insets bottom="20.0" left="10.0" right="10.0" top="20.0" />
             </padding>
             <Button fx:id="btnAdminPanel" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowAdmin" styleClass="btn, btn-warning" text="Panel de Admin" />
-            <Button fx:id="btnAllergyCatalog" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowAllergyCatalog" styleClass="btn, btn-default" text="Catálogo de Alergias" />
+<Button fx:id="btnSpecialties" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowSpecialties" styleClass="btn, btn-default" text="Especialidades" />
             <Button fx:id="btnPatientsList" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowPatientsList" styleClass="btn, btn-default" text="Lista de Pacientes" visible="true" managed="true" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowMetrics" styleClass="btn, btn-default" text="Métricas y Gráficos" />
             <Button fx:id="btnEmergencyContacts" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowEmergencyContacts" styleClass="btn, btn-default" text="Contactos de Emergencia" />
+            <Button fx:id="btnAllergies" maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowAllergies" styleClass="btn, btn-default" text="Alergias" />
+            <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowAppointments" styleClass="btn, btn-default" text="Citas" />
+            <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowTreatments" styleClass="btn, btn-default" text="Tratamientos" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowReports" styleClass="btn, btn-default" text="Reportes Clínicos" />
             <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onShowRecommendations" styleClass="btn, btn-default" text="Recomendaciones" />
 

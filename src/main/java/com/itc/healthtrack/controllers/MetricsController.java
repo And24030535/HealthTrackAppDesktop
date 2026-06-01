@@ -284,6 +284,17 @@ public class MetricsController {
             metricToProcess.setGlucoseLevel(txtGlucose.getText().isEmpty() ? null : Double.parseDouble(txtGlucose.getText()));
             metricToProcess.setWeight(txtWeight.getText().isEmpty() ? null : Double.parseDouble(txtWeight.getText()));
 
+            // verificamos que al menos un campo clinico tenga valor antes de persistir
+            if (metricToProcess.getSystolic()     == null
+                    && metricToProcess.getDiastolic()    == null
+                    && metricToProcess.getHeartRate()    == null
+                    && metricToProcess.getGlucoseLevel() == null
+                    && metricToProcess.getWeight()       == null) {
+                lblStatus.setText("Ingresa al menos un valor clínico antes de guardar");
+                lblStatus.setTextFill(Color.web("#ff9800"));
+                return;
+            }
+
             // calculamos el imc si tenemos peso y altura
             if (metricToProcess.getWeight() != null && selectedPatient.getHeight() != null
                     && selectedPatient.getHeight() > 0) {

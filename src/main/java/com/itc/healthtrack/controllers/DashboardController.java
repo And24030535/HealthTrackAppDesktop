@@ -14,7 +14,7 @@ import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.io.IOException;
 
-// controlador del menu lateral y el area central segun el rol del usuario
+// controlador del menu lateral y el area central que cambia segun el rol del usuario logeado
 public class DashboardController {
 
     @FXML private Label userNameLabel;
@@ -23,15 +23,16 @@ public class DashboardController {
     @FXML private Button btnPatientsList;
     @FXML private Button btnAdminPanel;
     @FXML private Button btnEmergencyContacts;
-    @FXML private Button btnAllergyCatalog;
+@FXML private Button btnSpecialties;
+    @FXML private Button btnAllergies;
 
     private User loggedInUser;
 
-    // inicializa el panel con el usuario y ajusta la interfaz segun el rol
+    // arranca el panel con el usuario logeado y ajusta la barra lateral y la vista inicial segun el rol
     public void initData(User user) {
         this.loggedInUser = user;
 
-        // muestra el prefijo correcto segun el rol
+        // el prefijo cambia segun si es medico admin o paciente
         String role = user.getRole() != null ? user.getRole() : "patient";
         switch (role) {
             case "doctor":
@@ -48,29 +49,32 @@ public class DashboardController {
                 break;
         }
 
+        // cada rol ve solo los botones que le corresponden y abre su modulo inicial
         if ("patient".equals(role)) {
             btnPatientsList.setVisible(false);
             btnPatientsList.setManaged(false);
             btnAdminPanel.setVisible(false);
             btnAdminPanel.setManaged(false);
-            btnAllergyCatalog.setVisible(false);
-            btnAllergyCatalog.setManaged(false);
+            btnSpecialties.setVisible(false);
+            btnSpecialties.setManaged(false);
+            btnAllergies.setVisible(false);
+            btnAllergies.setManaged(false);
             btnEmergencyContacts.setVisible(true);
             btnEmergencyContacts.setManaged(true);
             onShowMetrics();
         } else if ("admin".equals(role)) {
             btnEmergencyContacts.setVisible(false);
             btnEmergencyContacts.setManaged(false);
-            btnAllergyCatalog.setVisible(true);
-            btnAllergyCatalog.setManaged(true);
+            btnSpecialties.setVisible(true);
+            btnSpecialties.setManaged(true);
             onShowAdmin();
         } else {
             btnAdminPanel.setVisible(false);
             btnAdminPanel.setManaged(false);
             btnEmergencyContacts.setVisible(false);
             btnEmergencyContacts.setManaged(false);
-            btnAllergyCatalog.setVisible(false);
-            btnAllergyCatalog.setManaged(false);
+            btnSpecialties.setVisible(false);
+            btnSpecialties.setManaged(false);
             onShowPatientsList();
         }
     }
@@ -106,11 +110,26 @@ public class DashboardController {
     }
 
     @FXML
-    protected void onShowAllergyCatalog() {
-        changeModule("/com/itc/healthtrack/views/allergy_catalog.fxml", "allergy_catalog");
+    protected void onShowAllergies() {
+        changeModule("/com/itc/healthtrack/views/allergies-view.fxml", "allergies");
     }
 
-    // carga la vista fxml e instancia el controlador pasandole los datos del usuario
+    @FXML
+    protected void onShowAppointments() {
+        changeModule("/com/itc/healthtrack/views/appointments-view.fxml", "appointments");
+    }
+
+    @FXML
+    protected void onShowTreatments() {
+        changeModule("/com/itc/healthtrack/views/treatments-view.fxml", "treatments");
+    }
+
+    @FXML
+    protected void onShowSpecialties() {
+        changeModule("/com/itc/healthtrack/views/specialties-view.fxml", "specialties");
+    }
+
+    // carga la vista fxml instancia el controlador correspondiente y le pasa el usuario logeado
     private void changeModule(String fxmlPath, String moduleType) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
@@ -141,13 +160,25 @@ public class DashboardController {
                     EmergencyContactsController ecc = loader.getController();
                     ecc.initData(loggedInUser);
                     break;
-                case "allergy_catalog":
-                    AllergyCatalogController acc = loader.getController();
-                    acc.initData(loggedInUser);
+                case "allergies":
+                    AllergiesController alc = loader.getController();
+                    alc.initData(loggedInUser);
+                    break;
+                case "appointments":
+                    AppointmentsController apc = loader.getController();
+                    apc.initData(loggedInUser);
+                    break;
+                case "treatments":
+                    TreatmentsController tc = loader.getController();
+                    tc.initData(loggedInUser);
+                    break;
+                case "specialties":
+                    SpecialtiesController sc = loader.getController();
+                    sc.initData(loggedInUser);
                     break;
             }
 
-            // reemplaza el contenido anterior por el nuevo modulo
+            // limpiamos el area central y colocamos el nuevo modulo
             contentArea.getChildren().clear();
             contentArea.getChildren().add(node);
 
@@ -157,7 +188,7 @@ public class DashboardController {
         }
     }
 
-    // cierra sesion y vuelve al login restaurando los estilos
+    // cierra la sesion del usuario y regresa a la pantalla de login manteniendo pantalla completa
     @FXML
     protected void onLogout(ActionEvent event) {
         try {
@@ -170,7 +201,6 @@ public class DashboardController {
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(loginScene);
-            // mantener pantalla completa al volver al login
             stage.setFullScreen(true);
             stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);
         } catch (IOException e) {

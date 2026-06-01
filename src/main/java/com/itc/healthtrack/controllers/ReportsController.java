@@ -49,7 +49,8 @@ public class ReportsController {
     private final UserService userService = new UserService();
     private User loggedInDoctor;
 
-    // arranca el controlador con el usuario logeado si es paciente ve solo sus datos si es medico o admin ve la lista de pacientes
+    // arranca el controlador con el usuario logeado
+    // si es paciente ve solo sus datos y si es medico o admin ve la lista de pacientes
     public void initData(User doctor) {
         this.loggedInDoctor = doctor;
         if ("patient".equals(doctor.getRole())) {
@@ -61,14 +62,13 @@ public class ReportsController {
         }
     }
 
-    // carga los pacientes en el desplegable
+    // carga los pacientes visibles para el usuario en el desplegable
     private void loadPatients() {
         new Thread(() -> {
             try {
                 List<User> patients = userService.getPatientsForUser(loggedInDoctor);
-                Platform.runLater(() -> {
-                    comboPatients.setItems(FXCollections.observableArrayList(patients));
-                });
+                Platform.runLater(() ->
+                    comboPatients.setItems(FXCollections.observableArrayList(patients)));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -89,14 +89,11 @@ public class ReportsController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Guardar Reporte Clínico");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivos PDF", "*.pdf"));
-
-        // nombre sugerido por defecto
         fileChooser.setInitialFileName("Historial_" + selectedPatient.getFirstName() + ".pdf");
 
         Stage stage = (Stage) comboPatients.getScene().getWindow();
         File file = fileChooser.showSaveDialog(stage);
 
-        // si el usuario eligio ruta y presiono Guardar
         if (file != null) {
             lblStatus.setText("Descargando métricas...");
             lblStatus.setTextFill(javafx.scene.paint.Color.WHITE);
@@ -106,9 +103,9 @@ public class ReportsController {
                     // bajamos todo el historial del paciente
                     List<Metric> history = getMetricsByPatientId(selectedPatient.getUid());
 
-                    // calculamos alertas y traemos la ultima recomendacion en el mismo hilo de fondo para no bloquear la ui
-                    String alertsText          = buildAlertsText(history);
-                    String recommendationText  = fetchLatestRecommendation(selectedPatient.getUid());
+                    // calculamos alertas y la ultima recomendacion en el mismo hilo de fondo para no bloquear la ui
+                    String alertsText         = buildAlertsText(history);
+                    String recommendationText = fetchLatestRecommendation(selectedPatient.getUid());
 
                     Platform.runLater(() -> {
                         try {
@@ -159,7 +156,6 @@ public class ReportsController {
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
 
-        // encabezado del documento
         document.add(new Paragraph("Reporte Clínico - HealthTrack Community").setBold().setFontSize(18));
         document.add(new Paragraph("Paciente: " + patient.getFirstName() + " " + patient.getLastName()));
         if (loggedInDoctor != null
@@ -169,35 +165,29 @@ public class ReportsController {
                 document.add(new Paragraph("Licencia profesional: " + loggedInDoctor.getNumLicencia()));
             }
         }
-        // salto de linea
         document.add(new Paragraph(" "));
 
-        // tabla con 5 columnas
+        // tabla con 5 columnas una por tipo de metrica
         float[] columnWidths = {130f, 100f, 60f, 80f, 80f};
         Table table = new Table(columnWidths);
-
-        // encabezados de la tabla
         table.addHeaderCell("Fecha y Hora");
         table.addHeaderCell("Presión (Sis/Dia)");
         table.addHeaderCell("Pulso");
         table.addHeaderCell("Glucosa");
         table.addHeaderCell("Peso (kg)");
 
-        // iteramos sobre las metricas y las metemos como filas
         for (Metric m : history) {
-            String date = m.getTimestamp() != null ? m.getTimestamp().toDate().toString() : "N/A";
-            String bp = (m.getSystolic() != null && m.getDiastolic() != null) ? m.getSystolic() + "/" + m.getDiastolic() : "-";
-            String pulse = m.getHeartRate() != null ? String.valueOf(m.getHeartRate()) : "-";
+            String date    = m.getTimestamp() != null ? m.getTimestamp().toDate().toString() : "N/A";
+            String bp      = (m.getSystolic() != null && m.getDiastolic() != null) ? m.getSystolic() + "/" + m.getDiastolic() : "-";
+            String pulse   = m.getHeartRate()    != null ? String.valueOf(m.getHeartRate())    : "-";
             String glucose = m.getGlucoseLevel() != null ? String.valueOf(m.getGlucoseLevel()) : "-";
-            String weight = m.getWeight() != null ? String.valueOf(m.getWeight()) : "-";
-
+            String weight  = m.getWeight()       != null ? String.valueOf(m.getWeight())       : "-";
             table.addCell(date);
             table.addCell(bp);
             table.addCell(pulse);
             table.addCell(glucose);
             table.addCell(weight);
         }
-
         document.add(table);
 
         // insertamos los graficos embebidos si estan disponibles
@@ -213,30 +203,24 @@ public class ReportsController {
             }
         }
 
-        // seccion alertas detectadas
         document.add(new Paragraph(" "));
-        document.add(new Paragraph("Alertas Detectadas")
-                .setBold().setFontSize(14));
-        document.add(new Paragraph(alertsText != null ? alertsText : "Sin alertas.")
-                .setFontSize(11));
+        document.add(new Paragraph("Alertas Detectadas").setBold().setFontSize(14));
+        document.add(new Paragraph(alertsText != null ? alertsText : "Sin alertas.").setFontSize(11));
 
-        // seccion recomendaciones clinicas
         document.add(new Paragraph(" "));
-        document.add(new Paragraph("Recomendaciones Clínicas")
-                .setBold().setFontSize(14));
+        document.add(new Paragraph("Recomendaciones Clínicas").setBold().setFontSize(14));
         document.add(new Paragraph(recommendationText != null
                 ? recommendationText
-                : "No se ha generado ningún análisis para este paciente.")
-                .setFontSize(11));
+                : "No se ha generado ningún análisis para este paciente.").setFontSize(11));
 
         document.close();
     }
 
-    // genera los graficos de presion y promedios como png para meter al pdf
+    // genera los graficos de presion y promedios como png para incrustar en el pdf
     private List<byte[]> buildChartImages(List<Metric> history) {
         List<byte[]> images = new ArrayList<>();
 
-        // grafico de presion arterial
+        // grafico de linea con la evolucion de presion arterial
         try {
             CategoryAxis xAxis = new CategoryAxis();
             NumberAxis yAxis = new NumberAxis();
@@ -245,8 +229,7 @@ public class ReportsController {
             lineChart.setAnimated(false);
             lineChart.setPrefSize(620, 280);
 
-            // series sistolica y diastolica
-            XYChart.Series<String, Number> systolicSeries = new XYChart.Series<>();
+            XYChart.Series<String, Number> systolicSeries  = new XYChart.Series<>();
             systolicSeries.setName("Sistólica");
             XYChart.Series<String, Number> diastolicSeries = new XYChart.Series<>();
             diastolicSeries.setName("Diastólica");
@@ -269,7 +252,7 @@ public class ReportsController {
             System.err.println("Error generando gráfico de línea: " + e.getMessage());
         }
 
-        // grafico de barras con los promedios
+        // grafico de barras con los promedios del historial
         try {
             CategoryAxis xAxis2 = new CategoryAxis();
             NumberAxis yAxis2 = new NumberAxis();
@@ -281,13 +264,12 @@ public class ReportsController {
             XYChart.Series<String, Number> avgSeries = new XYChart.Series<>();
             avgSeries.setName("Promedio");
 
-            // delegamos el conteo y suma a MetricUtils solo agregamos los promedios con dato
             Averages avg = computeAverages(history);
-            if (avg.systolicAvg  != null) avgSeries.getData().add(new XYChart.Data<>("Sistólica",   avg.systolicAvg));
-            if (avg.diastolicAvg != null) avgSeries.getData().add(new XYChart.Data<>("Diastólica",  avg.diastolicAvg));
-            if (avg.heartRateAvg != null) avgSeries.getData().add(new XYChart.Data<>("F.Cardíaca",  avg.heartRateAvg));
-            if (avg.glucoseAvg   != null) avgSeries.getData().add(new XYChart.Data<>("Glucosa",     avg.glucoseAvg));
-            if (avg.weightAvg    != null) avgSeries.getData().add(new XYChart.Data<>("Peso (kg)",   avg.weightAvg));
+            if (avg.systolicAvg  != null) avgSeries.getData().add(new XYChart.Data<>("Sistólica",  avg.systolicAvg));
+            if (avg.diastolicAvg != null) avgSeries.getData().add(new XYChart.Data<>("Diastólica", avg.diastolicAvg));
+            if (avg.heartRateAvg != null) avgSeries.getData().add(new XYChart.Data<>("F.Cardíaca", avg.heartRateAvg));
+            if (avg.glucoseAvg   != null) avgSeries.getData().add(new XYChart.Data<>("Glucosa",    avg.glucoseAvg));
+            if (avg.weightAvg    != null) avgSeries.getData().add(new XYChart.Data<>("Peso (kg)",  avg.weightAvg));
 
             barChart.getData().add(avgSeries);
             byte[] barBytes = snapshotNodeToBytes(barChart, 620, 280);
@@ -300,11 +282,11 @@ public class ReportsController {
         return images;
     }
 
-    // convierte un nodo de javafx a png tomandole una captura
+    // convierte un nodo de JavaFX a bytes png tomandole un snapshot
     private byte[] snapshotNodeToBytes(javafx.scene.Node node, double width, double height) {
         try {
             StackPane wrapper = new StackPane(node);
-            // meter el nodo en una escena activa la aplicacion del css
+            // meter el nodo en una escena activa el css
             javafx.scene.Scene tempScene = new javafx.scene.Scene(wrapper, width, height);
             node.applyCss();
             wrapper.layout();
@@ -312,7 +294,7 @@ public class ReportsController {
             SnapshotParameters params = new SnapshotParameters();
             WritableImage writableImage = node.snapshot(params, null);
 
-            // pasamos la imagen de javafx a BufferedImage de swing
+            // pasamos la imagen de JavaFX a BufferedImage de Swing
             BufferedImage bufferedImage = SwingFXUtils.fromFXImage(writableImage, null);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(bufferedImage, "png", baos);
@@ -324,7 +306,6 @@ public class ReportsController {
         }
     }
 
-    // exporta el historial clinico a un xlsx con formato
     @FXML
     protected void onExportExcel() {
         User selectedPatient = comboPatients.getValue();
@@ -335,7 +316,6 @@ public class ReportsController {
             return;
         }
 
-        // abrimos el dialogo para elegir donde guardar el archivo
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Guardar Reporte Clínico en Excel");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivos Excel", "*.xlsx"));
@@ -348,7 +328,7 @@ public class ReportsController {
             lblStatus.setText("Generando archivo Excel...");
             lblStatus.setTextFill(javafx.scene.paint.Color.WHITE);
 
-            // generamos el archivo en hilo de fondo
+            // generamos el archivo en hilo de fondo para no bloquear la ui
             new Thread(() -> {
                 try {
                     List<Metric> history = getMetricsByPatientId(selectedPatient.getUid());
@@ -376,32 +356,29 @@ public class ReportsController {
         }
     }
 
-    // construye el xlsx con Apache POI con info del paciente y sus metricas el try-with-resources cierra el workbook aunque truene la escritura
+    // construye el xlsx con Apache POI con info del paciente y sus metricas
+    // el try-with-resources cierra el workbook aunque truene la escritura
     private void generateExcel(String destPath, User patient, List<Metric> history) throws Exception {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Historial Clínico");
 
-            // estilo para los encabezados
             CellStyle headerStyle = workbook.createCellStyle();
             Font font = workbook.createFont();
             font.setBold(true);
             headerStyle.setFont(font);
 
-            // info del paciente
             Row titleRow = sheet.createRow(0);
             titleRow.createCell(0).setCellValue("Reporte Clínico - HealthTrack Community");
 
             Row patientRow = sheet.createRow(1);
             patientRow.createCell(0).setCellValue("Paciente: " + patient.getFirstName() + " " + patient.getLastName());
 
-            // info del medico si esta disponible
             if (loggedInDoctor != null
                     && ("doctor".equals(loggedInDoctor.getRole()) || "admin".equals(loggedInDoctor.getRole()))) {
                 Row doctorRow = sheet.createRow(2);
                 doctorRow.createCell(0).setCellValue("Médico a cargo: " + loggedInDoctor.getFirstName() + " " + loggedInDoctor.getLastName());
             }
 
-            // encabezados de la tabla
             Row headerRow = sheet.createRow(4);
             String[] columns = {"Fecha y Hora", "Presión (Sis/Dia)", "Pulso", "Glucosa", "Peso (kg)"};
             for (int i = 0; i < columns.length; i++) {
@@ -410,17 +387,14 @@ public class ReportsController {
                 cell.setCellStyle(headerStyle);
             }
 
-            // llenado de datos
             int rowNum = 5;
             for (Metric m : history) {
                 Row row = sheet.createRow(rowNum++);
-
-                String date = m.getTimestamp() != null ? m.getTimestamp().toDate().toString() : "N/A";
-                String bp = (m.getSystolic() != null && m.getDiastolic() != null) ? m.getSystolic() + "/" + m.getDiastolic() : "-";
-                String pulse = m.getHeartRate() != null ? String.valueOf(m.getHeartRate()) : "-";
+                String date    = m.getTimestamp() != null ? m.getTimestamp().toDate().toString() : "N/A";
+                String bp      = (m.getSystolic() != null && m.getDiastolic() != null) ? m.getSystolic() + "/" + m.getDiastolic() : "-";
+                String pulse   = m.getHeartRate()    != null ? String.valueOf(m.getHeartRate())    : "-";
                 String glucose = m.getGlucoseLevel() != null ? String.valueOf(m.getGlucoseLevel()) : "-";
-                String weight = m.getWeight() != null ? String.valueOf(m.getWeight()) : "-";
-
+                String weight  = m.getWeight()       != null ? String.valueOf(m.getWeight())       : "-";
                 row.createCell(0).setCellValue(date);
                 row.createCell(1).setCellValue(bp);
                 row.createCell(2).setCellValue(pulse);
@@ -428,32 +402,28 @@ public class ReportsController {
                 row.createCell(4).setCellValue(weight);
             }
 
-            // ajuste automatico del ancho de las columnas
-            for (int i = 0; i < columns.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
+            // ajuste automatico del ancho de todas las columnas
+            for (int i = 0; i < columns.length; i++) sheet.autoSizeColumn(i);
 
-            // escritura del archivo fisico
             try (FileOutputStream fileOut = new FileOutputStream(destPath)) {
                 workbook.write(fileOut);
             }
         }
     }
 
-    // trae el historial de metricas del paciente ordenado por fecha
+    // trae el historial de metricas del paciente ordenado de mas reciente a mas antiguo
     private List<Metric> getMetricsByPatientId(String patientId) throws Exception {
         List<Metric> metrics = metricDao.getByField("patientId", patientId);
         sortByTimestampDesc(metrics);
         return metrics;
     }
 
-    // trae el analisis clinico mas reciente guardado en firestore excluye notas manuales del medico solo trae analisis automaticos
+    // trae el analisis clinico mas reciente de Firestore excluye las notas manuales del medico
     private String fetchLatestRecommendation(String patientId) {
         try {
             List<Recommendation> all = recommendationDao.getByField("patientId", patientId);
             Recommendation latest = null;
             for (Recommendation r : all) {
-                // solo consideramos los analisis automaticos no las notas del medico
                 if ("note".equals(r.getType())) continue;
                 if (latest == null) {
                     latest = r;
@@ -471,7 +441,9 @@ public class ReportsController {
         }
     }
 
-    // arma el texto de alertas activas a partir de la metrica mas reciente evalua presion glucosa frecuencia cardiaca e imc la lista debe venir ordenada desc
+    // arma el texto de alertas activas a partir de la metrica mas reciente
+    // evalua presion glucosa frecuencia cardiaca e imc
+    // la lista debe venir ordenada desc con la entrada mas reciente en el indice 0
     private static String buildAlertsText(List<Metric> history) {
         if (history == null || history.isEmpty()) {
             return "Sin métricas registradas — no se pueden calcular alertas.";
@@ -480,7 +452,6 @@ public class ReportsController {
         Metric latest = history.get(0);
         StringBuilder sb = new StringBuilder();
 
-        // presion arterial
         if (latest.getSystolic() != null && latest.getDiastolic() != null) {
             int sys = latest.getSystolic();
             int dia = latest.getDiastolic();
@@ -496,7 +467,6 @@ public class ReportsController {
             }
         }
 
-        // glucosa
         if (latest.getGlucoseLevel() != null) {
             double gluc = latest.getGlucoseLevel();
             if (gluc > 300) {
@@ -509,39 +479,27 @@ public class ReportsController {
             }
         }
 
-        // frecuencia cardiaca
         if (latest.getHeartRate() != null) {
             int hr = latest.getHeartRate();
-            if (hr > 120) {
-                sb.append("• ALERTA — Taquicardia (").append(hr).append(" lpm)\n");
-            } else if (hr < 50) {
-                sb.append("• ALERTA — Bradicardia (").append(hr).append(" lpm)\n");
-            }
+            if (hr > 120) sb.append("• ALERTA — Taquicardia (").append(hr).append(" lpm)\n");
+            else if (hr < 50) sb.append("• ALERTA — Bradicardia (").append(hr).append(" lpm)\n");
         }
 
-        // indice de masa corporal
         if (latest.getBmi() != null) {
             double bmi = latest.getBmi();
-            if (bmi >= 40) {
-                sb.append("• ALERTA — Obesidad mórbida (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 35) {
-                sb.append("• ALERTA — Obesidad severa (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 30) {
-                sb.append("• AVISO — Obesidad clase I (IMC: ").append(bmi).append(")\n");
-            } else if (bmi >= 25) {
-                sb.append("• AVISO — Sobrepeso (IMC: ").append(bmi).append(")\n");
-            } else if (bmi < 18.5) {
-                sb.append("• AVISO — Bajo peso (IMC: ").append(bmi).append(")\n");
-            }
+            if      (bmi >= 40) sb.append("• ALERTA — Obesidad mórbida (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 35) sb.append("• ALERTA — Obesidad severa (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 30) sb.append("• AVISO — Obesidad clase I (IMC: ").append(bmi).append(")\n");
+            else if (bmi >= 25) sb.append("• AVISO — Sobrepeso (IMC: ").append(bmi).append(")\n");
+            else if (bmi < 18.5) sb.append("• AVISO — Bajo peso (IMC: ").append(bmi).append(")\n");
         }
 
-        if (sb.length() == 0) {
-            return "No se detectaron valores fuera del rango clínico normal.";
-        }
-        return sb.toString().trim();
+        return sb.length() == 0
+                ? "No se detectaron valores fuera del rango clínico normal."
+                : sb.toString().trim();
     }
 
-    // ordena las metricas de mas reciente a mas antigua las que no tienen timestamp van al final
+    // ordena las metricas de mas reciente a mas antigua y las sin timestamp van al final
     private static void sortByTimestampDesc(List<Metric> metrics) {
         metrics.sort((a, b) -> {
             if (a.getTimestamp() == null && b.getTimestamp() == null) return 0;
@@ -551,7 +509,9 @@ public class ReportsController {
         });
     }
 
-    // calcula los promedios de las cinco metricas principales devuelve null en los campos sin datos la presion solo cuenta cuando sistolica y diastolica estan presentes
+    // calcula los promedios de las cinco metricas principales
+    // devuelve null en los campos que no tienen datos
+    // la presion solo cuenta cuando sistolica y diastolica estan presentes juntas
     private static Averages computeAverages(List<Metric> data) {
         Averages result = new Averages();
         if (data == null || data.isEmpty()) return result;
@@ -561,37 +521,22 @@ public class ReportsController {
         int bpCount = 0, hrCount = 0, glCount = 0, weightCount = 0;
 
         for (Metric m : data) {
-            // sistolica y diastolica solo cuentan cuando ambas vienen juntas
             if (m.getSystolic() != null && m.getDiastolic() != null) {
-                sysTotal += m.getSystolic();
-                diaTotal += m.getDiastolic();
-                bpCount++;
+                sysTotal += m.getSystolic(); diaTotal += m.getDiastolic(); bpCount++;
             }
-            if (m.getHeartRate() != null) {
-                hrTotal += m.getHeartRate();
-                hrCount++;
-            }
-            if (m.getGlucoseLevel() != null) {
-                glTotal += m.getGlucoseLevel();
-                glCount++;
-            }
-            if (m.getWeight() != null) {
-                weightTotal += m.getWeight();
-                weightCount++;
-            }
+            if (m.getHeartRate()    != null) { hrTotal     += m.getHeartRate();     hrCount++;     }
+            if (m.getGlucoseLevel() != null) { glTotal     += m.getGlucoseLevel();  glCount++;     }
+            if (m.getWeight()       != null) { weightTotal += m.getWeight();        weightCount++; }
         }
 
-        if (bpCount > 0) {
-            result.systolicAvg  = sysTotal / (double) bpCount;
-            result.diastolicAvg = diaTotal / (double) bpCount;
-        }
-        if (hrCount > 0)     result.heartRateAvg = hrTotal     / (double) hrCount;
+        if (bpCount > 0)     { result.systolicAvg = sysTotal / (double)bpCount; result.diastolicAvg = diaTotal / (double)bpCount; }
+        if (hrCount > 0)     result.heartRateAvg = hrTotal     / (double)hrCount;
         if (glCount > 0)     result.glucoseAvg   = glTotal     / glCount;
         if (weightCount > 0) result.weightAvg    = weightTotal / weightCount;
         return result;
     }
 
-    // contenedor con los promedios calculados un campo null significa que no habia datos
+    // contenedor con los cinco promedios un campo null significa que no habia datos suficientes
     private static class Averages {
         public Double systolicAvg;
         public Double diastolicAvg;

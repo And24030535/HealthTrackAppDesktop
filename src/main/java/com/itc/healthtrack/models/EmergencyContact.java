@@ -1,20 +1,19 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 3 — Contacto de emergencia de un paciente
-// se guarda en la subcoleccion firestore users/{patientId}/emergencyContacts
+// contacto de emergencia de un paciente guardado en la subcoleccion firestore users/{patientId}/emergencyContacts
 public class EmergencyContact {
 
-    // id del documento en firestore tambien guardado como campo
+    // id del documento en firestore tambien guardado como campo del documento
     private String id;
-    // id del paciente dueno del contacto (desnormalizado, el contacto vive bajo su subcoleccion)
+    // id del paciente dueno del contacto desnormalizado porque el contacto vive bajo su subcoleccion
     private String patientId;
     private String name;
     private String phone;
-    // parentesco o relacion con el paciente ej Madre, Hermano, Amigo
+    // parentesco o relacion con el paciente por ejemplo Madre Hermano o Amigo
     private String relationship;
-    // correo usado para avisarle en una alerta critica via JavaMail
+    // correo al que se le avisa cuando hay una alerta critica via JavaMail
     private String email;
-    // marca al contacto principal al que se le notifica en emergencias
+    // indica si es el contacto principal al que se notifica en emergencias
     private boolean primary;
 
     public EmergencyContact() {}

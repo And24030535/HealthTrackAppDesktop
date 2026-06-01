@@ -29,12 +29,10 @@ public class PatientsController {
     @FXML private ComboBox<String> comboGender;
     @FXML private DatePicker   dpBirthDate;
 
-    @FXML private TableView<User>               tablePatients;
-    @FXML private TableColumn<User, String>     colFirstName, colLastName, colEmail, colGender;
+    @FXML private TableView<User>           tablePatients;
+    @FXML private TableColumn<User, String> colFirstName, colLastName, colEmail, colGender;
 
-    // dao para guardar y leer pacientes de firestore
     private final GenericDAO<User> userDao = new GenericDAO<>(User.class, "users");
-
     private final ObservableList<User> patientsObservableList = FXCollections.observableArrayList();
 
     private User loggedInDoctor;
@@ -52,7 +50,6 @@ public class PatientsController {
         colLastName .setCellValueFactory(new PropertyValueFactory<>("lastName"));
         colEmail    .setCellValueFactory(new PropertyValueFactory<>("email"));
         colGender   .setCellValueFactory(new PropertyValueFactory<>("gender"));
-
         tablePatients.setItems(patientsObservableList);
 
         tablePatients.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
@@ -63,6 +60,8 @@ public class PatientsController {
         });
     }
 
+    // carga los pacientes visibles para el usuario logeado
+    // el admin ve todos y el medico solo los que tiene asignados
     private void loadPatients() {
         new Thread(() -> {
             try {
@@ -89,26 +88,24 @@ public class PatientsController {
     protected void onSavePatient() {
         try {
             if (selectedPatient == null) {
-                // crear nuevo paciente
+                // crear nuevo paciente con password temporal que el admin debe compartir al paciente
                 User newPatient = new User();
                 fillUserFromForm(newPatient);
                 newPatient.setRole("patient");
                 newPatient.setAssignedDoctorId(loggedInDoctor.getUid());
 
-                // password temporal para crear la cuenta en firebase auth
-                // el admin debe compartirla con el paciente para su primer acceso
-                String tempPassword = "Tmp@" + UUID.randomUUID().toString().substring(0, 8);
+                String tempPassword  = "Tmp@" + UUID.randomUUID().toString().substring(0, 8);
                 final String emailForAuth = newPatient.getEmail();
 
                 new Thread(() -> {
                     try {
-                        // crear cuenta en firebase auth
+                        // crear cuenta en Firebase Auth
                         UserRecord.CreateRequest authRequest = new UserRecord.CreateRequest()
                                 .setEmail(emailForAuth)
                                 .setPassword(tempPassword);
                         UserRecord createdRecord = FirebaseAuth.getInstance().createUser(authRequest);
                         String uid = createdRecord.getUid();
-                        // guardar perfil en firestore usando el uid de auth como id
+                        // guardar perfil en Firestore usando el uid de Auth como id del documento
                         newPatient.setUid(uid);
                         userDao.save(uid, newPatient);
 
@@ -144,14 +141,13 @@ public class PatientsController {
 
         new Thread(() -> {
             try {
-                // eliminamos la cuenta de firebase auth
-                // sin esto el paciente podria seguir autenticandose aunque ya no tenga perfil
+                // eliminamos la cuenta de Firebase Auth para que el paciente no pueda seguir autenticandose
                 if (uidToDelete != null && !uidToDelete.isEmpty()) {
                     FirebaseAuth.getInstance().deleteUser(uidToDelete);
                     System.out.println("[PatientsController] Auth eliminado — UID: " + uidToDelete);
                 }
 
-                // eliminamos el perfil de firestore
+                // eliminamos el perfil de Firestore
                 userDao.delete(uidToDelete);
 
                 Platform.runLater(() -> { onClearForm(); loadPatients(); });
@@ -170,7 +166,6 @@ public class PatientsController {
         dpBirthDate .setValue(null);
         comboGender .setValue(null);
         txtHeight   .clear();
-
         selectedPatient = null;
         tablePatients.getSelectionModel().clearSelection();
     }
@@ -194,15 +189,13 @@ public class PatientsController {
 
             Scene scene = new Scene(root, 900, 600);
             scene.getStylesheets().add(BootstrapFX.bootstrapFXStylesheet());
-            String cssPath = getClass().getResource("/css/main.css").toExternalForm();
-            scene.getStylesheets().add(cssPath);
+            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
 
             Stage stage = new Stage();
             stage.setTitle("Alergias del paciente");
             stage.setScene(scene);
             stage.initModality(Modality.APPLICATION_MODAL);
-            Stage owner = (Stage) tablePatients.getScene().getWindow();
-            stage.initOwner(owner);
+            stage.initOwner((Stage) tablePatients.getScene().getWindow());
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -228,5 +221,4 @@ public class PatientsController {
         u.setGender   (comboGender.getValue());
         u.setHeight   (txtHeight.getText().isEmpty() ? null : Double.parseDouble(txtHeight.getText()));
     }
-
 }

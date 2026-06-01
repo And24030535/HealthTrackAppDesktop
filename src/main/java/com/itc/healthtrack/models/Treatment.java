@@ -1,8 +1,8 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 6 — tratamiento medico del paciente en la coleccion "treatments"
-// el medico crea el tratamiento y luego le agrega detalles (medicamentos) en la subcoleccion
-// cuando closed=true el tratamiento queda en modo solo lectura
+// tratamiento medico del paciente guardado en la coleccion treatments
+// el medico crea el tratamiento y luego le agrega detalles con medicamentos en la subcoleccion
+// cuando closed es true el tratamiento queda en modo solo lectura
 public class Treatment {
 
     private String id;
@@ -11,8 +11,8 @@ public class Treatment {
     private String doctorId;
     private String doctorName;
     private String diagnosis;
-    private String startDate;   // formato yyyy-MM-dd
-    private String endDate;     // formato yyyy-MM-dd, puede quedar vacio
+    private String startDate;   // formato texto aaaa mm dd
+    private String endDate;     // formato texto aaaa mm dd puede quedar vacio
     private boolean closed;
 
     // constructor vacio requerido por el sdk de firestore

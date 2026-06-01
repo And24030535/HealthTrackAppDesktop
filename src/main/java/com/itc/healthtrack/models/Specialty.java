@@ -1,11 +1,10 @@
 package com.itc.healthtrack.models;
 
-// FEATURE 1 — Catalogo de especialidades medicas
-// representa una especialidad del catalogo que administra el admin
-// se guarda en la coleccion firestore "specialties"
+// especialidad medica del catalogo que administra el admin
+// se guarda en la coleccion firestore specialties
 public class Specialty {
 
-    // id del documento en firestore tambien guardado como campo
+    // id del documento en firestore tambien guardado como campo del documento
     private String id;
     private String name;
     private String description;

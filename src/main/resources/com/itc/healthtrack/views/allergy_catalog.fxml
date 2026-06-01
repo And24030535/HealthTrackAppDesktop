@@ -45,9 +45,8 @@
 
         <TableView fx:id="tableAllergies" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="colAllergyName" text="Alergia" prefWidth="200"/>
-                <TableColumn fx:id="colAllergySeverity" text="Severidad" prefWidth="120"/>
-                <TableColumn fx:id="colAllergyStatus" text="Estado" prefWidth="100"/>
+                <TableColumn fx:id="colAllergyName" text="Alergia" prefWidth="220"/>
+                <TableColumn fx:id="colAllergySeverity" text="Severidad" prefWidth="200"/>
             </columns>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

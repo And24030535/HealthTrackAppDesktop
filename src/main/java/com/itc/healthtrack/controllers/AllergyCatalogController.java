@@ -13,7 +13,8 @@ import javafx.scene.paint.Color;
 
 import java.util.List;
 
-// controlador para administrar el catalogo de alergias
+// administra el catalogo global de alergias disponible solo para el admin
+// las alergias del catalogo se eliminan directamente porque no tienen concepto de activo/inactivo
 public class AllergyCatalogController {
 
     @FXML private TextField txtAllergyName;
@@ -21,7 +22,6 @@ public class AllergyCatalogController {
     @FXML private TableView<Allergy> tableAllergies;
     @FXML private TableColumn<Allergy, String> colAllergyName;
     @FXML private TableColumn<Allergy, String> colAllergySeverity;
-    @FXML private TableColumn<Allergy, Boolean> colAllergyStatus;
     @FXML private Label lblAllergyStatus;
     @FXML private Button btnToggleActive;
 
@@ -43,8 +43,9 @@ public class AllergyCatalogController {
         }
     }
 
+    // configura columnas de la tabla con severidad traducida al espanol
     private void setupTable() {
-        colAllergyName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        colAllergyName.setCellValueFactory(new PropertyValueFactory<>("allergen"));
         colAllergySeverity.setCellValueFactory(new PropertyValueFactory<>("severity"));
         colAllergySeverity.setCellFactory(column -> new TableCell<Allergy, String>() {
             @Override
@@ -57,18 +58,6 @@ public class AllergyCatalogController {
                 }
             }
         });
-        colAllergyStatus.setCellValueFactory(new PropertyValueFactory<>("active"));
-        colAllergyStatus.setCellFactory(column -> new TableCell<Allergy, Boolean>() {
-            @Override
-            protected void updateItem(Boolean active, boolean empty) {
-                super.updateItem(active, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    setText(Boolean.TRUE.equals(active) ? "Activa" : "Inactiva");
-                }
-            }
-        });
 
         tableAllergies.setItems(allergiesObservableList);
         tableAllergies.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
@@ -76,7 +65,7 @@ public class AllergyCatalogController {
                 selectedAllergy = newVal;
                 fillForm(newVal);
                 updateToggleButtonText();
-                lblAllergyStatus.setText("Alergia seleccionada: " + newVal.getName());
+                lblAllergyStatus.setText("Alergia seleccionada: " + newVal.getAllergen());
                 lblAllergyStatus.setTextFill(Color.web("#aaaaaa"));
             }
         });
@@ -102,20 +91,22 @@ public class AllergyCatalogController {
         }).start();
     }
 
+    // agrega una nueva alergia al catalogo validando nombre no vacio y sin duplicados
     @FXML
     protected void onAddAllergy() {
-        String name = txtAllergyName.getText() != null ? txtAllergyName.getText().trim() : "";
+        String name          = txtAllergyName.getText() != null ? txtAllergyName.getText().trim() : "";
         String severityLabel = comboSeverity.getValue();
 
         if (name.isEmpty()) {
-            lblAllergyStatus.setText("Ingresa el nombre de la alergia.");
+            lblAllergyStatus.setText("Ingresa el nombre de la alergia");
             lblAllergyStatus.setTextFill(Color.web("#ff5252"));
             return;
         }
 
+        // no permitimos duplicados ignorando mayusculas
         for (Allergy existing : allergiesObservableList) {
-            if (existing.getName() != null && existing.getName().equalsIgnoreCase(name)) {
-                lblAllergyStatus.setText("Ya existe una alergia con ese nombre.");
+            if (existing.getAllergen() != null && existing.getAllergen().equalsIgnoreCase(name)) {
+                lblAllergyStatus.setText("Ya existe una alergia con ese nombre");
                 lblAllergyStatus.setTextFill(Color.web("#ff9800"));
                 return;
             }
@@ -127,24 +118,23 @@ public class AllergyCatalogController {
 
         new Thread(() -> {
             try {
-                String id = allergyDao.createDocumentId();
+                String id      = allergyDao.createDocumentId();
                 Allergy allergy = new Allergy();
                 allergy.setId(id);
-                allergy.setName(name);
+                allergy.setAllergen(name);
                 allergy.setSeverity(severityValue);
-                allergy.setActive(true);
                 allergyDao.save(id, allergy);
 
                 Platform.runLater(() -> {
                     allergiesObservableList.add(allergy);
                     tableAllergies.refresh();
                     onClearForm();
-                    lblAllergyStatus.setText("Alergia registrada correctamente.");
+                    lblAllergyStatus.setText("Alergia registrada correctamente");
                     lblAllergyStatus.setTextFill(Color.web("#4caf50"));
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    lblAllergyStatus.setText("Error al guardar la alergia.");
+                    lblAllergyStatus.setText("Error al guardar la alergia");
                     lblAllergyStatus.setTextFill(Color.web("#ff5252"));
                 });
                 e.printStackTrace();
@@ -152,33 +142,36 @@ public class AllergyCatalogController {
         }).start();
     }
 
+    // elimina la alergia seleccionada del catalogo
     @FXML
     protected void onToggleActive() {
         if (selectedAllergy == null) {
-            lblAllergyStatus.setText("Selecciona una alergia.");
+            lblAllergyStatus.setText("Selecciona una alergia");
             lblAllergyStatus.setTextFill(Color.web("#ff9800"));
             return;
         }
 
-        boolean isActive = Boolean.TRUE.equals(selectedAllergy.getActive());
-        boolean newState = !isActive;
-        selectedAllergy.setActive(newState);
+        if (selectedAllergy.getId() == null) {
+            lblAllergyStatus.setText("Error la alergia seleccionada no tiene ID válido");
+            lblAllergyStatus.setTextFill(Color.web("#ff5252"));
+            return;
+        }
 
-        lblAllergyStatus.setText(newState ? "Activando alergia..." : "Desactivando alergia...");
+        lblAllergyStatus.setText("Eliminando alergia...");
         lblAllergyStatus.setTextFill(Color.web("#ffffff"));
 
         new Thread(() -> {
             try {
-                allergyDao.save(selectedAllergy.getId(), selectedAllergy);
+                allergyDao.delete(selectedAllergy.getId());
                 Platform.runLater(() -> {
-                    tableAllergies.refresh();
-                    updateToggleButtonText();
-                    lblAllergyStatus.setText(newState ? "Alergia activada." : "Alergia desactivada.");
+                    onClearForm();
+                    loadAllergies();
+                    lblAllergyStatus.setText("Alergia eliminada");
                     lblAllergyStatus.setTextFill(Color.web("#4caf50"));
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    lblAllergyStatus.setText("Error al actualizar la alergia.");
+                    lblAllergyStatus.setText("Error al eliminar la alergia");
                     lblAllergyStatus.setTextFill(Color.web("#ff5252"));
                 });
                 e.printStackTrace();
@@ -197,34 +190,32 @@ public class AllergyCatalogController {
 
     private void fillForm(Allergy allergy) {
         if (allergy == null) return;
-        txtAllergyName.setText(allergy.getName());
+        txtAllergyName.setText(allergy.getAllergen());
         comboSeverity.setValue(toSeverityLabel(allergy.getSeverity()));
     }
 
     private void updateToggleButtonText() {
         if (btnToggleActive == null) return;
-        if (selectedAllergy == null) {
-            btnToggleActive.setText("Desactivar");
-        } else {
-            btnToggleActive.setText(Boolean.TRUE.equals(selectedAllergy.getActive()) ? "Desactivar" : "Activar");
-        }
+        btnToggleActive.setText("Eliminar");
     }
 
+    // convierte la etiqueta en espanol al valor interno en ingles para firestore
     private String toSeverityValue(String label) {
         if (label == null) return "mild";
         switch (label) {
             case "Moderada": return "moderate";
-            case "Severa": return "severe";
-            default: return "mild";
+            case "Severa":   return "severe";
+            default:         return "mild";
         }
     }
 
+    // convierte el valor interno en ingles a la etiqueta legible en espanol
     private String toSeverityLabel(String value) {
         if (value == null) return "Leve";
         switch (value) {
             case "moderate": return "Moderada";
-            case "severe": return "Severa";
-            default: return "Leve";
+            case "severe":   return "Severa";
+            default:         return "Leve";
         }
     }
 }

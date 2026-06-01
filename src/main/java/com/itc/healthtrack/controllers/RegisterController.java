@@ -4,11 +4,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.itc.healthtrack.config.AppConfig;
 import com.itc.healthtrack.dao.GenericDAO;
-import com.itc.healthtrack.models.Specialty;
 import com.itc.healthtrack.models.User;
+import com.itc.healthtrack.utils.DialogUtils;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -22,11 +20,10 @@ import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.util.List;
 
-// controlador para registrar nuevos usuarios
-// segun el rol elegido pide un token de acceso para medicos y admins
+// controlador de registro de nuevos usuarios
+// segun el rol elegido solicita un token de acceso para medicos y admins
+// los tokens viven en AppConfig para no duplicarlos aqui
 public class RegisterController {
-
-    // los tokens viven en AppConfig para evitar duplicacion
 
     @FXML private TextField        txtFirstName;
     @FXML private TextField        txtLastName;
@@ -37,10 +34,6 @@ public class RegisterController {
     @FXML private PasswordField    txtConfirmPassword;
     @FXML private ComboBox<String> comboGender;
     @FXML private ComboBox<String> comboRole;
-    @FXML private Label lblSpecialty;
-    @FXML private ComboBox<Specialty> comboSpecialty;
-    @FXML private Label lblLicense;
-    @FXML private TextField txtLicense;
 
     @FXML private VBox      tokenSection;
     @FXML private Label     lblTokenLabel;
@@ -49,10 +42,7 @@ public class RegisterController {
     @FXML private Label  lblStatus;
     @FXML private Button btnRegister;
 
-    // unico dao para guardar el nuevo perfil en firestore
     private final GenericDAO<User> userDAO = new GenericDAO<>(User.class, "users");
-    private final GenericDAO<Specialty> specialtyDAO = new GenericDAO<>(Specialty.class, "specialties");
-    private final ObservableList<Specialty> specialtiesList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -60,45 +50,11 @@ public class RegisterController {
         comboRole.getItems().addAll("Paciente", "Doctor", "Admin");
         comboRole.setValue("Paciente");
 
-        if (comboSpecialty != null) {
-            comboSpecialty.setItems(specialtiesList);
-            comboSpecialty.setCellFactory(lv -> new ListCell<>() {
-                @Override protected void updateItem(Specialty s, boolean empty) {
-                    super.updateItem(s, empty);
-                    setText(empty || s == null ? null : s.getName());
-                }
-            });
-            comboSpecialty.setButtonCell(new ListCell<>() {
-                @Override protected void updateItem(Specialty s, boolean empty) {
-                    super.updateItem(s, empty);
-                    setText(empty || s == null ? null : s.getName());
-                }
-            });
-        }
-
-        loadSpecialties();
-
         // mostramos u ocultamos el campo de token segun el rol seleccionado
         comboRole.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             boolean needsToken = "Doctor".equals(newVal) || "Admin".equals(newVal);
             tokenSection.setVisible(needsToken);
             tokenSection.setManaged(needsToken);
-
-            boolean needsSpecialty = "Doctor".equals(newVal);
-            if (lblSpecialty != null && comboSpecialty != null) {
-                lblSpecialty.setVisible(needsSpecialty);
-                lblSpecialty.setManaged(needsSpecialty);
-                comboSpecialty.setVisible(needsSpecialty);
-                comboSpecialty.setManaged(needsSpecialty);
-                if (!needsSpecialty) comboSpecialty.getSelectionModel().clearSelection();
-            }
-            if (lblLicense != null && txtLicense != null) {
-                lblLicense.setVisible(needsSpecialty);
-                lblLicense.setManaged(needsSpecialty);
-                txtLicense.setVisible(needsSpecialty);
-                txtLicense.setManaged(needsSpecialty);
-                if (!needsSpecialty) txtLicense.clear();
-            }
 
             if (!needsToken) {
                 txtToken.clear();
@@ -123,12 +79,10 @@ public class RegisterController {
         final String roleLabel    = comboRole.getValue();
         final String tokenInput   = txtToken.getText().trim();
         final String heightText   = txtHeight.getText().trim();
-        final Specialty selectedSpecialty = comboSpecialty != null ? comboSpecialty.getValue() : null;
-        final String licenseText  = txtLicense != null ? txtLicense.getText().trim() : "";
         final String birthDateStr = dpBirthDate.getValue() != null
                 ? dpBirthDate.getValue().toString() : null;
 
-        // validaciones basicas
+        // validaciones basicas de campos obligatorios
         if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()) {
             showStatus("Por favor, completa todos los campos obligatorios.", false);
             return;
@@ -146,16 +100,8 @@ public class RegisterController {
             return;
         }
 
-        // checamos el token para los roles elevados
+        // verificamos el token para los roles elevados
         if ("Doctor".equals(roleLabel)) {
-            if (selectedSpecialty == null) {
-                showStatus("Selecciona una especialidad médica para continuar.", false);
-                return;
-            }
-            if (licenseText.isEmpty()) {
-                showStatus("Ingresa el número de licencia profesional.", false);
-                return;
-            }
             if (tokenInput.isEmpty()) {
                 showTokenAlert("Se requiere el código de acceso médico para registrarse como Doctor.\n"
                         + "Solicítalo al administrador del sistema.");
@@ -179,7 +125,7 @@ public class RegisterController {
             }
         }
 
-        // mapeamos la etiqueta de rol al valor interno
+        // mapeamos la etiqueta de rol al valor interno de la base de datos
         final String mappedRole;
         switch (roleLabel) {
             case "Doctor": mappedRole = "doctor";  break;
@@ -187,7 +133,7 @@ public class RegisterController {
             default:       mappedRole = "patient"; break;
         }
 
-        // validamos el formato de la altura
+        // validamos el formato de la altura antes de ir al hilo de fondo
         Double parsedHeight = null;
         if (!heightText.isEmpty()) {
             try {
@@ -203,18 +149,7 @@ public class RegisterController {
 
         new Thread(() -> {
             try {
-                if ("doctor".equals(mappedRole)) {
-                    List<User> existingLicenses = userDAO.getByField("numLicencia", licenseText);
-                    if (existingLicenses != null && !existingLicenses.isEmpty()) {
-                        Platform.runLater(() -> {
-                            showStatus("El número de licencia ya está registrado.", false);
-                            btnRegister.setDisable(false);
-                        });
-                        return;
-                    }
-                }
-
-                // creamos la cuenta en firebase auth admin sdk
+                // creamos la cuenta en Firebase Auth usando el Admin SDK
                 UserRecord.CreateRequest authRequest = new UserRecord.CreateRequest()
                         .setEmail(email)
                         .setPassword(password);
@@ -222,7 +157,7 @@ public class RegisterController {
                 String uid = createdRecord.getUid();
                 System.out.println("[RegisterController] Auth OK — UID: " + uid);
 
-                // construimos el perfil para firestore sin password
+                // construimos el perfil para Firestore sin incluir la contraseña
                 User profile = new User();
                 profile.setUid(uid);
                 profile.setEmail(email);
@@ -232,12 +167,8 @@ public class RegisterController {
                 profile.setGender(gender);
                 if (birthDateStr != null) profile.setBirthDate(birthDateStr);
                 if (finalHeight  != null) profile.setHeight(finalHeight);
-                if ("doctor".equals(mappedRole) && selectedSpecialty != null) {
-                    profile.setSpecialtyId(selectedSpecialty.getId());
-                    profile.setNumLicencia(licenseText);
-                }
 
-                // auto asignamos un medico si el nuevo usuario es paciente
+                // auto asignamos un medico aleatorio si el nuevo usuario es paciente
                 if ("patient".equals(mappedRole)) {
                     List<User> doctors = userDAO.getByField("role", "doctor");
                     if (!doctors.isEmpty()) {
@@ -248,12 +179,11 @@ public class RegisterController {
                     }
                 }
 
-                // guardamos el perfil en firestore usando el uid como id del documento
+                // guardamos el perfil en Firestore usando el uid como id del documento
                 userDAO.save(uid, profile);
                 System.out.println("[RegisterController] Perfil guardado en Firestore — UID: " + uid
                         + ", rol: " + mappedRole);
 
-                // mostramos confirmacion y redirigimos al login
                 Platform.runLater(() -> {
                     String displayRole;
                     if ("doctor".equals(mappedRole)) {
@@ -294,17 +224,17 @@ public class RegisterController {
         }).start();
     }
 
-    // alerta de token invalido
+    // muestra la alerta de token invalido usando el estilo unificado de la app
     private void showTokenAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Código de Acceso Requerido");
         alert.setHeaderText("Verificación de seguridad fallida");
         alert.setContentText(message);
-        applyWhiteStyle(alert.getDialogPane());
+        DialogUtils.applyWhiteStyle(alert.getDialogPane());
         alert.showAndWait();
     }
 
-    // obtiene el codigo de error de firebase con compatibilidad entre versiones del sdk
+    // obtiene el codigo de error de Firebase con compatibilidad entre versiones del SDK
     private String resolveAuthErrorCode(com.google.firebase.auth.FirebaseAuthException ex) {
         try { if (ex.getAuthErrorCode() != null) return ex.getAuthErrorCode().name(); }
         catch (Exception ignored) {}
@@ -313,7 +243,7 @@ public class RegisterController {
         return ex.getMessage() != null ? ex.getMessage() : "UNKNOWN";
     }
 
-    // convierte los codigos de error del registro a mensajes en espanol
+    // convierte los codigos de error del registro a mensajes legibles en espanol
     private String parseAuthError(String code) {
         if (code == null) return "Error al registrar la cuenta. Intenta de nuevo.";
         switch (code) {
@@ -344,7 +274,7 @@ public class RegisterController {
             scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(scene);
-            // mantener pantalla completa al volver al login
+            // mantenemos pantalla completa al volver al login
             stage.setFullScreen(true);
             stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);
         } catch (Exception e) {
@@ -357,61 +287,5 @@ public class RegisterController {
         lblStatus.setText(message);
         lblStatus.setTextFill(isSuccess ? Color.web("#4caf50") : Color.web("#ff5252"));
         lblStatus.setVisible(true);
-    }
-
-    private void loadSpecialties() {
-        new Thread(() -> {
-            try {
-                List<Specialty> all = specialtyDAO.getAll();
-                Platform.runLater(() -> {
-                    specialtiesList.setAll(all);
-                    if (comboSpecialty != null && all.isEmpty()) {
-                        comboSpecialty.setPromptText("Sin especialidades");
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> showStatus("Error al cargar especialidades.", false));
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
-    // aplica el estilo blanco al panel del dialogo
-    private static void applyWhiteStyle(DialogPane dp) {
-        // fondo blanco
-        dp.setStyle("-fx-background-color: #ffffff; -fx-font-size: 13px;");
-
-        // texto del contenido en oscuro
-        javafx.scene.Node content = dp.lookup(".content.label");
-        if (content != null) {
-            content.setStyle("-fx-text-fill: #222222; -fx-font-size: 13px;");
-        }
-
-        // encabezado en gris claro
-        javafx.scene.Node header = dp.lookup(".header-panel");
-        if (header != null) {
-            header.setStyle("-fx-background-color: #f5f5f5;");
-        }
-
-        // texto del encabezado en negro
-        javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
-        if (headerLabel != null) {
-            headerLabel.setStyle("-fx-text-fill: #111111; -fx-font-weight: bold;");
-        }
-
-        // botones azul para confirmar y gris para cancelar
-        for (ButtonType bt : dp.getButtonTypes()) {
-            javafx.scene.Node node = dp.lookupButton(bt);
-            if (node instanceof Button) {
-                Button btn = (Button) node;
-                boolean isCancel = (bt == ButtonType.CANCEL
-                        || bt == ButtonType.NO
-                        || bt == ButtonType.CLOSE);
-                String color = isCancel ? "#9e9e9e" : "#2196f3";
-                btn.setStyle("-fx-background-color: " + color
-                        + "; -fx-text-fill: #ffffff; -fx-cursor: hand;"
-                        + " -fx-padding: 6 22; -fx-background-radius: 4;");
-            }
-        }
     }
 }

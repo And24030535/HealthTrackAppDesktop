@@ -3,6 +3,7 @@ package com.itc.healthtrack.controllers;
 import com.itc.healthtrack.dao.GenericDAO;
 import com.itc.healthtrack.models.Specialty;
 import com.itc.healthtrack.models.User;
+import com.itc.healthtrack.utils.DialogUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,7 +14,7 @@ import javafx.scene.paint.Color;
 
 import java.util.List;
 
-// permite al admin crear y eliminar especialidades guardadas en la coleccion "specialties"
+// permite al admin crear y eliminar especialidades guardadas en la coleccion specialties
 public class SpecialtiesController {
 
     @FXML private TextField txtName;
@@ -25,14 +26,13 @@ public class SpecialtiesController {
 
     @FXML private Label lblStatus;
 
-    // unico dao para las operaciones sobre la coleccion de especialidades
     private final GenericDAO<Specialty> specialtyDao = new GenericDAO<>(Specialty.class, "specialties");
     private final ObservableList<Specialty> specialtiesObservableList = FXCollections.observableArrayList();
 
     private User loggedInAdmin;
     private Specialty selectedSpecialty = null;
 
-    // arranca el controlador con el admin logeado y carga el catalogo
+    // arranca el controlador con el admin logeado y carga el catalogo de especialidades
     public void initData(User admin) {
         this.loggedInAdmin = admin;
         setupTable();
@@ -45,7 +45,7 @@ public class SpecialtiesController {
         colDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
         tableSpecialties.setItems(specialtiesObservableList);
 
-        // guardamos la seleccion cuando el admin clickea una fila
+        // guardamos la seleccion cuando el admin hace click en una fila
         tableSpecialties.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 selectedSpecialty = newVal;
@@ -55,7 +55,7 @@ public class SpecialtiesController {
         });
     }
 
-    // carga todas las especialidades en un hilo de fondo y refresca la tabla en el hilo fx
+    // carga todas las especialidades en hilo de fondo y refresca la tabla en el hilo de JavaFX
     private void loadAllSpecialties() {
         new Thread(() -> {
             try {
@@ -76,7 +76,7 @@ public class SpecialtiesController {
         }).start();
     }
 
-    // crea una nueva especialidad validando que el nombre no este vacio ni repetido
+    // crea una nueva especialidad validando nombre no vacio y sin duplicados
     @FXML
     protected void onCreateSpecialty() {
         final String name = txtName.getText() == null ? "" : txtName.getText().trim();
@@ -88,7 +88,7 @@ public class SpecialtiesController {
             return;
         }
 
-        // no permitimos nombres duplicados (ignorando mayusculas) en la lista local
+        // no permitimos nombres duplicados ignorando mayusculas en la lista local
         boolean duplicate = specialtiesObservableList.stream()
                 .anyMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase(name));
         if (duplicate) {
@@ -102,13 +102,13 @@ public class SpecialtiesController {
 
         new Thread(() -> {
             try {
-                // generamos un id nuevo y lo guardamos tambien como campo del documento
+                // generamos el id y lo guardamos tambien como campo del documento
                 String id = specialtyDao.createDocumentId();
                 Specialty specialty = new Specialty(id, name, description);
                 specialtyDao.save(id, specialty);
 
                 Platform.runLater(() -> {
-                    // refrescamos la lista local sin recargar firestore
+                    // refrescamos la lista local sin recargar Firestore
                     specialtiesObservableList.add(specialty);
                     txtName.clear();
                     txtDescription.clear();
@@ -134,14 +134,14 @@ public class SpecialtiesController {
             return;
         }
 
-        final String id = selectedSpecialty.getId();
+        final String id   = selectedSpecialty.getId();
         final String name = selectedSpecialty.getName();
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirmar eliminación");
         confirm.setHeaderText("Eliminar especialidad");
         confirm.setContentText("¿Eliminar la especialidad \"" + name + "\"?\n\nEsta acción no se puede deshacer.");
-        applyWhiteStyle(confirm.getDialogPane());
+        DialogUtils.applyWhiteStyle(confirm.getDialogPane());
 
         confirm.showAndWait().ifPresent(result -> {
             if (result != ButtonType.OK) return;
@@ -151,7 +151,7 @@ public class SpecialtiesController {
                 try {
                     specialtyDao.delete(id);
                     Platform.runLater(() -> {
-                        // quitamos la especialidad de la lista local sin recargar firestore
+                        // quitamos la especialidad de la lista local sin recargar Firestore
                         specialtiesObservableList.removeIf(s -> id.equals(s.getId()));
                         selectedSpecialty = null;
                         tableSpecialties.getSelectionModel().clearSelection();
@@ -167,39 +167,5 @@ public class SpecialtiesController {
                 }
             }).start();
         });
-    }
-
-    // aplica el estilo blanco al panel del dialogo (mismo criterio que el resto de la app)
-    private static void applyWhiteStyle(DialogPane dp) {
-        dp.setStyle("-fx-background-color: #ffffff; -fx-font-size: 13px;");
-
-        javafx.scene.Node content = dp.lookup(".content.label");
-        if (content != null) {
-            content.setStyle("-fx-text-fill: #222222; -fx-font-size: 13px;");
-        }
-
-        javafx.scene.Node header = dp.lookup(".header-panel");
-        if (header != null) {
-            header.setStyle("-fx-background-color: #f5f5f5;");
-        }
-
-        javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
-        if (headerLabel != null) {
-            headerLabel.setStyle("-fx-text-fill: #111111; -fx-font-weight: bold;");
-        }
-
-        for (ButtonType bt : dp.getButtonTypes()) {
-            javafx.scene.Node node = dp.lookupButton(bt);
-            if (node instanceof Button) {
-                Button btn = (Button) node;
-                boolean isCancel = (bt == ButtonType.CANCEL
-                        || bt == ButtonType.NO
-                        || bt == ButtonType.CLOSE);
-                String color = isCancel ? "#9e9e9e" : "#2196f3";
-                btn.setStyle("-fx-background-color: " + color
-                        + "; -fx-text-fill: #ffffff; -fx-cursor: hand;"
-                        + " -fx-padding: 6 22; -fx-background-radius: 4;");
-            }
-        }
     }
 }

@@ -10,36 +10,35 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 
-// servicio asincrono para enviar correos por smtp
+// servicio asincrono para enviar correos por smtp sin congelar la interfaz
 public class NotificationService {
 
-    // config del servidor smtp de gmail
+    // configuracion del servidor smtp de gmail
     private static final String SMTP_HOST = "smtp.gmail.com";
     private static final String SMTP_PORT = "587";
 
-    private static final String SYSTEM_EMAIL = "clinicahealthtrack@gmail.com";
+    private static final String SYSTEM_EMAIL    = "clinicahealthtrack@gmail.com";
     private static final String SYSTEM_PASSWORD = "yaih bgnl dubi ctgs";
 
-    // formato de la marca de tiempo
+    // formato de la marca de tiempo en los correos
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // notifica a un paciente en hilo secundario para no congelar la interfaz
+    // notifica al paciente en hilo secundario para no bloquear la ui
     public void notifyPatient(User patient, String message) {
         new Thread(() -> {
-            String subject = "HealthTrack - Alerta de Salud";
+            String subject       = "HealthTrack - Alerta de Salud";
             String recipientName = patient.getFirstName() + " " + patient.getLastName();
             sendEmail(patient.getEmail(), subject, recipientName, message);
         }).start();
     }
 
-    // manda al paciente una recomendacion formal desde el medico
+    // manda al paciente una recomendacion formal escrita por el medico
     public void sendRecommendationEmail(User patient, String doctorFullName, String title, String message) {
         new Thread(() -> {
-            String subject    = "HealthTrack - Nueva recomendación de tu médico";
+            String subject     = "HealthTrack - Nueva recomendación de tu médico";
             String patientName = patient.getFirstName() + " " + patient.getLastName();
             String body = "Tu médico " + doctorFullName + " ha generado una nueva recomendación para ti:\n\n"
                     + "Título: " + title + "\n\n"
@@ -48,16 +47,17 @@ public class NotificationService {
         }).start();
     }
 
-    // notifica al medico tambien en hilo aparte
+    // notifica al medico tambien en hilo aparte para no bloquear
     public void notifyDoctor(User doctor, String message) {
         new Thread(() -> {
-            String subject = "HealthTrack - Actualización de Paciente";
+            String subject       = "HealthTrack - Actualización de Paciente";
             String recipientName = "Dr. " + doctor.getFirstName() + " " + doctor.getLastName();
             sendEmail(doctor.getEmail(), subject, recipientName, message);
         }).start();
     }
 
-    // notifica al contacto de emergencia principal cuando hay alerta critica
+    // notifica al contacto de emergencia principal cuando hay una alerta critica
+    // busca el contacto marcado como primario y le envia el correo con los datos de la metrica
     public void notifyEmergencyContact(User patient, Metric metric) {
         if (patient == null || patient.getUid() == null) return;
         new Thread(() -> {
@@ -71,28 +71,31 @@ public class NotificationService {
                 }
 
                 EmergencyContact primary = selectPrimaryContact(contacts);
-                if (primary == null || primary.getPhone() == null || primary.getPhone().isBlank()) {
-                    System.err.println("[NotificationService] Contacto de emergencia sin correo o teléfono válido.");
+                // necesitamos el correo para poder enviar la notificacion
+                if (primary == null || primary.getEmail() == null || primary.getEmail().isBlank()) {
+                    System.err.println("[NotificationService] Contacto de emergencia sin correo válido.");
                     return;
                 }
 
-                String subject = "HealthTrack - Alerta de Emergencia";
-                String recipientName = primary.getFullName() != null ? primary.getFullName() : "Contacto de Emergencia";
-                String message = buildEmergencyMessage(patient, metric, primary);
-                sendEmail(primary.getPhone(), subject, recipientName, message);
+                String subject       = "HealthTrack - Alerta de Emergencia";
+                String recipientName = primary.getName() != null ? primary.getName() : "Contacto de Emergencia";
+                String message       = buildEmergencyMessage(patient, metric, primary);
+                sendEmail(primary.getEmail(), subject, recipientName, message);
             } catch (Exception e) {
                 System.err.println("[NotificationService] Error al notificar contacto de emergencia: " + e.getMessage());
             }
         }).start();
     }
 
+    // preferimos el contacto marcado como primario si no hay ninguno tomamos el primero de la lista
     private EmergencyContact selectPrimaryContact(List<EmergencyContact> contacts) {
         return contacts.stream()
-                .filter(contact -> contact != null)
-                .sorted(Comparator.comparing(EmergencyContact::getId,
-                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .filter(c -> c != null && c.isPrimary())
                 .findFirst()
-                .orElse(null);
+                .orElse(contacts.stream()
+                        .filter(c -> c != null)
+                        .findFirst()
+                        .orElse(null));
     }
 
     private String buildEmergencyMessage(User patient, Metric metric, EmergencyContact contact) {
@@ -118,20 +121,20 @@ public class NotificationService {
         return body.toString();
     }
 
-    // construye y manda el correo
+    // arma y envia el correo via smtp con autenticacion de gmail
     private void sendEmail(String toEmail, String subject, String recipientName, String messageBody) {
-        // checamos que la direccion sea valida antes de intentar conectar
+        // verificamos que haya correo antes de intentar conectar al servidor
         if (toEmail == null || toEmail.isEmpty()) {
             System.err.println("No se proporcionó correo para el destinatario: " + recipientName);
             return;
         }
 
-        // propiedades de seguridad y conexion smtp
+        // propiedades de seguridad y conexion smtp con starttls
         Properties properties = new Properties();
-        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.auth",            "true");
         properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.host", SMTP_HOST);
-        properties.put("mail.smtp.port", SMTP_PORT);
+        properties.put("mail.smtp.host",            SMTP_HOST);
+        properties.put("mail.smtp.port",            SMTP_PORT);
 
         // sesion autenticada con las credenciales del sistema
         Session session = Session.getInstance(properties, new Authenticator() {
@@ -142,22 +145,19 @@ public class NotificationService {
         });
 
         try {
-            // mensaje mime
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(SYSTEM_EMAIL));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
             message.setSubject(subject);
 
-            // cuerpo del correo que vera el usuario
-            String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+            // cuerpo del correo con saludo marca de tiempo y firma
+            String timestamp   = LocalDateTime.now().format(TIMESTAMP_FORMAT);
             String fullMessage = "Hola " + recipientName + ",\n\n" +
                     messageBody + "\n\n" +
                     "Generado el: " + timestamp + "\n" +
                     "HealthTrack Community - OwO";
 
             message.setText(fullMessage);
-
-            // envio final
             Transport.send(message);
             System.out.println("Correo enviado exitosamente a: " + toEmail);
         } catch (MessagingException e) {

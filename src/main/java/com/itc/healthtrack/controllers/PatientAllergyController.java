@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// controlador de alergias asociadas a un paciente
+// controlador para asociar alergias del catalogo a un paciente especifico
+// el catalogo global vive en la coleccion allergies y la asociacion en users/{uid}/patientAllergies
 public class PatientAllergyController {
 
     @FXML private Label lblPatientName;
@@ -32,11 +33,14 @@ public class PatientAllergyController {
     @FXML private TableColumn<PatientAllergy, String> colNotes;
     @FXML private Label lblStatus;
 
+    // dao del catalogo global de alergias
     private final GenericDAO<Allergy> allergyDao = new GenericDAO<>(Allergy.class, "allergies");
+    // dao de las alergias asociadas al paciente se inicializa cuando se conoce su uid
     private GenericDAO<PatientAllergy> patientAllergyDao;
 
     private final ObservableList<PatientAllergy> patientAllergyList = FXCollections.observableArrayList();
     private final ObservableList<Allergy> allergiesObservableList = FXCollections.observableArrayList();
+    // mapa id->alergia para resolver nombres rapidamente sin volver a consultar firestore
     private final Map<String, Allergy> allergyMap = new HashMap<>();
 
     private User selectedPatient;
@@ -64,6 +68,7 @@ public class PatientAllergyController {
         }
     }
 
+    // configura el combobox del catalogo con celdas personalizadas que muestran nombre y severidad
     private void setupCombo() {
         comboAllergies.setItems(allergiesObservableList);
         comboAllergies.setCellFactory(lv -> new ListCell<Allergy>() {
@@ -83,6 +88,7 @@ public class PatientAllergyController {
     }
 
     private void setupTable() {
+        // resolvemos el nombre de la alergia usando el mapa en memoria para no ir a firestore por cada fila
         colAllergyName.setCellValueFactory(data ->
                 new SimpleStringProperty(getAllergyName(data.getValue().getAllergyId())));
         colSeverity.setCellValueFactory(data ->
@@ -94,11 +100,13 @@ public class PatientAllergyController {
         tableAllergies.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 selectedPatientAllergy = newVal;
+
                 fillForm(newVal);
             }
         });
     }
 
+    // carga el catalogo global de alergias y construye el mapa id->alergia
     private void loadAllergyCatalog() {
         new Thread(() -> {
             try {
@@ -124,6 +132,7 @@ public class PatientAllergyController {
         }).start();
     }
 
+    // carga las alergias ya asociadas al paciente desde su subcoleccion
     private void loadPatientAllergies() {
         if (patientAllergyDao == null) return;
         new Thread(() -> {
@@ -154,15 +163,6 @@ public class PatientAllergyController {
             return;
         }
 
-        boolean isNew = (selectedPatientAllergy == null);
-        boolean isSameAllergy = !isNew && allergy.getId() != null
-                && allergy.getId().equals(selectedPatientAllergy.getAllergyId());
-        if (!Boolean.TRUE.equals(allergy.getActive()) && !isSameAllergy) {
-            lblStatus.setText("No puedes asignar una alergia inactiva.");
-            lblStatus.setTextFill(Color.web("#ff9800"));
-            return;
-        }
-
         LocalDate detectionDate = dpDetectionDate.getValue();
         if (detectionDate == null) {
             lblStatus.setText("Selecciona la fecha de detección.");
@@ -170,6 +170,7 @@ public class PatientAllergyController {
             return;
         }
 
+        boolean isNew = (selectedPatientAllergy == null);
         PatientAllergy record = isNew ? new PatientAllergy() : selectedPatientAllergy;
         record.setAllergyId(allergy.getId());
         record.setDetectionDate(detectionDate.toString());
@@ -255,30 +256,31 @@ public class PatientAllergyController {
         txtNotes.setText(record.getNotes());
     }
 
+    // resuelve el nombre del alergeno a partir del id usando el mapa en memoria
     private String getAllergyName(String allergyId) {
         Allergy allergy = allergyMap.get(allergyId);
-        return allergy != null && allergy.getName() != null ? allergy.getName() : "—";
+        return allergy != null && allergy.getAllergen() != null ? allergy.getAllergen() : "";
     }
 
     private String getSeverityLabel(String allergyId) {
         Allergy allergy = allergyMap.get(allergyId);
-        return allergy != null ? toSeverityLabel(allergy.getSeverity()) : "—";
+        return allergy != null ? toSeverityLabel(allergy.getSeverity()) : "";
     }
 
     private String toSeverityLabel(String value) {
         if (value == null) return "Leve";
         switch (value) {
             case "moderate": return "Moderada";
-            case "severe": return "Severa";
-            default: return "Leve";
+            case "severe":   return "Severa";
+            default:         return "Leve";
         }
     }
 
+    // formatea la etiqueta de la alergia para el combobox incluyendo nombre y nivel de severidad
     private String formatAllergyLabel(Allergy allergy) {
         if (allergy == null) return "";
-        String name = allergy.getName() != null ? allergy.getName() : "Alergia";
+        String name     = allergy.getAllergen() != null ? allergy.getAllergen() : "Alergia";
         String severity = toSeverityLabel(allergy.getSeverity());
-        String status = Boolean.TRUE.equals(allergy.getActive()) ? "" : " (Inactiva)";
-        return name + " — " + severity + status;
+        return name + " — " + severity;
     }
 }

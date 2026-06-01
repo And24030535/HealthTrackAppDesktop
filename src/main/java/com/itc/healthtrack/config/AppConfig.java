@@ -1,12 +1,12 @@
 package com.itc.healthtrack.config;
 
-// constantes globales del proyecto
+// constantes globales de la aplicacion
 public class AppConfig {
 
-    // token para registrarse o iniciar sesion como medico
+    // token requerido para registrarse o iniciar sesion como medico
     public static final String TOKEN_DOCTOR = "DOCTOR-2026";
 
-    // token para registrar una cuenta de admin
+    // token requerido para registrar una cuenta de administrador
     public static final String TOKEN_ADMIN = "ADMIN-TRACK-2026";
 
     private AppConfig() {}

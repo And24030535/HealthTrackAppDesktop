@@ -4,18 +4,18 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-// FEATURE 8 — notificacion del sistema guardada en la coleccion "notifications"
-// type: CRITICAL (no se puede eliminar), WARNING, INFO
-// delivered: true si se envio ademas un correo electronico
-// read: true cuando el usuario abre la notificacion
+// notificacion del sistema guardada en la coleccion notifications
+// el tipo puede ser CRITICAL que no se puede eliminar WARNING o INFO
+// delivered indica si ademas se envio un correo electronico al destinatario
+// read se vuelve true cuando el usuario abre la notificacion
 public class AppNotification {
 
     private String id;
     private String userId;
     private String message;
-    private String type;        // CRITICAL | WARNING | INFO
-    private boolean delivered;  // se envio email ademas de guardar en Firestore
-    private long createdAt;     // System.currentTimeMillis()
+    private String type;        // CRITICAL WARNING o INFO
+    private boolean delivered;  // true si ademas se envio un correo al destinatario
+    private long createdAt;     // milisegundos unix del momento en que se genero
     private boolean read;
 
     // constructor vacio requerido por el sdk de firestore
@@ -60,7 +60,7 @@ public class AppNotification {
         return fmt.format(Instant.ofEpochMilli(createdAt));
     }
 
-    // etiqueta visible del tipo en la tabla
+    // etiqueta legible del tipo para mostrar en la tabla de notificaciones
     public String getTypeLabel() {
         if (type == null) return "INFO";
         return switch (type) {

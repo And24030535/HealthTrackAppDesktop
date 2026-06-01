@@ -3,14 +3,14 @@ package com.itc.healthtrack.models;
 import com.google.cloud.Timestamp;
 
 // nota medica o recomendacion guardada en firestore
-// puede ser un analisis automatico o una nota escrita por el medico
+// puede ser un analisis automatico generado por el algoritmo o una nota escrita manualmente por el medico
 public class Recommendation {
     private String id;
     private String patientId;
-    // uid del medico que escribio la nota null en analisis automaticos
+    // uid del medico que escribio la nota es null en los analisis automaticos
     private String doctorId;
     private Timestamp generatedAt;
-    // tipo "suggestion" para analisis automaticos "note" o "doctor_recommendation" para notas
+    // tipo suggestion para analisis automaticos y note o doctor_recommendation para notas del medico
     private String type;
     private String title;
     private String message;

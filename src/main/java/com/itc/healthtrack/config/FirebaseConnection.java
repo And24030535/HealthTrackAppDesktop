@@ -9,7 +9,7 @@ import com.google.firebase.cloud.FirestoreClient;
 import java.io.IOException;
 import java.io.InputStream;
 
-// conexion a firebase con singleton para reutilizar la misma instancia en todo el proyecto
+// conexion a firebase implementada como singleton para reutilizar la misma instancia en todo el proyecto
 public class FirebaseConnection {
 
     private static volatile FirebaseConnection instance;
@@ -17,7 +17,7 @@ public class FirebaseConnection {
 
     private FirebaseConnection() {
         try {
-            // cargamos el archivo de credenciales que firebase necesita para autenticarse
+            // cargamos el archivo de credenciales desde el classpath para que firebase pueda autenticarse
             InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("firebase-key.json");
 
             if (serviceAccount == null) {
@@ -28,7 +28,7 @@ public class FirebaseConnection {
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                     .build();
 
-            // solo inicializamos la app si no habia sido inicializada antes
+            // inicializamos la app solo si no habia sido inicializada antes para evitar duplicados
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
             }
@@ -40,7 +40,7 @@ public class FirebaseConnection {
         }
     }
 
-    // devuelve la unica instancia y la crea si es la primera vez
+    // devuelve la unica instancia y la crea si es la primera vez que se llama
     public static FirebaseConnection getInstance() {
         if (instance == null) {
             synchronized (FirebaseConnection.class) {
@@ -52,7 +52,7 @@ public class FirebaseConnection {
         return instance;
     }
 
-    // regresa el firestore para hacer consultas
+    // regresa la instancia de firestore para hacer consultas
     public Firestore getFirestore() {
         return db;
     }
