@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- FEATURE 8 — Panel de notificaciones del sistema -->
+<!-- CRITICAL=rojo (no se puede eliminar), WARNING=naranja, INFO=azul -->
+<!-- las notificaciones no leidas aparecen resaltadas -->
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.itc.healthtrack.controllers.NotificationsController"
+      spacing="12"
+      style="-fx-background-color: #1e1e2e; -fx-padding: 20;">
+
+    <!-- Encabezado con contador de no leidas -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <Label text="Notificaciones" textFill="WHITE"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <Label fx:id="lblUnreadBadge" textFill="#ff9800"
+               style="-fx-font-size: 13px; -fx-font-weight: bold;"/>
+        <Label maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        <Button text="Marcar todas como leídas"
+                onAction="#onMarkAllRead"
+                styleClass="btn,btn-primary"/>
+        <Button text="Eliminar seleccionada"
+                onAction="#onDeleteNotification"
+                styleClass="btn,btn-danger"/>
+    </HBox>
+
+    <!-- Tabla de notificaciones -->
+    <TableView fx:id="tableNotifications" VBox.vgrow="ALWAYS"
+               style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+        <columns>
+            <TableColumn fx:id="colType"    text="Tipo"         prefWidth="100"/>
+            <TableColumn fx:id="colMessage" text="Mensaje"      prefWidth="430"/>
+            <TableColumn fx:id="colDate"    text="Fecha"        prefWidth="130"/>
+            <TableColumn fx:id="colRead"    text="Estado"       prefWidth="100"/>
+        </columns>
+        <placeholder>
+            <Label text="No tienes notificaciones" textFill="#666666"/>
+        </placeholder>
+    </TableView>
+
+    <!-- Mensaje de estado -->
+    <Label fx:id="lblStatus" text="" textFill="#7f8c8d"/>
+
+</VBox>

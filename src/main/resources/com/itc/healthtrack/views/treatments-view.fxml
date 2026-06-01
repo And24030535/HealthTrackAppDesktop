@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- FEATURE 6 — Tratamientos y recetas (desktop) -->
+<!-- medico: crea, cierra y elimina tratamientos + agrega/quita medicamentos -->
+<!-- paciente / admin: solo lectura -->
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.itc.healthtrack.controllers.TreatmentsController"
+      spacing="12"
+      style="-fx-background-color: #1e1e2e; -fx-padding: 20;">
+
+    <!-- Encabezado y selector de paciente (oculto para paciente) -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <Label text="Tratamientos y Recetas" textFill="WHITE"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <Label maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="comboPatients" prefWidth="230"
+                  promptText="Seleccionar paciente..."/>
+    </HBox>
+
+    <!-- Cuerpo principal: dos columnas -->
+    <HBox spacing="16" VBox.vgrow="ALWAYS">
+
+        <!-- Columna izquierda: tabla de tratamientos + formulario de tratamiento -->
+        <VBox spacing="10" prefWidth="430">
+
+            <Label text="Tratamientos" textFill="#aaaaaa"
+                   style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+
+            <TableView fx:id="tableTreatments" prefHeight="210"
+                       style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+                <columns>
+                    <TableColumn fx:id="colDiagnosis" text="Diagnóstico" prefWidth="155"/>
+                    <TableColumn fx:id="colStartDate" text="Inicio"      prefWidth="85"/>
+                    <TableColumn fx:id="colEndDate"   text="Fin"         prefWidth="85"/>
+                    <TableColumn fx:id="colStatus"    text="Estado"      prefWidth="85"/>
+                </columns>
+                <placeholder>
+                    <Label text="Sin tratamientos registrados" textFill="#666666"/>
+                </placeholder>
+            </TableView>
+
+            <!-- Formulario de tratamiento — visible solo para el medico -->
+            <VBox fx:id="formSection" spacing="8"
+                  style="-fx-background-color: #2a2a3e; -fx-padding: 14; -fx-background-radius: 6;">
+                <Label text="Nuevo / Editar Tratamiento" textFill="WHITE"
+                       style="-fx-font-weight: bold;"/>
+                <TextField fx:id="txtDiagnosis" promptText="Diagnóstico *"
+                           style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                                  -fx-prompt-text-fill: #666666;"/>
+                <HBox spacing="8">
+                    <DatePicker fx:id="dpStartDate" promptText="Fecha inicio *"
+                                HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <DatePicker fx:id="dpEndDate"   promptText="Fecha fin (opcional)"
+                                HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                </HBox>
+                <HBox spacing="6">
+                    <Button fx:id="btnSaveTreatment" text="Guardar"
+                            onAction="#onSaveTreatment"
+                            styleClass="btn,btn-primary"
+                            maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnCloseTreatment" text="Cerrar trat."
+                            onAction="#onCloseTreatment"
+                            styleClass="btn,btn-warning"
+                            maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            disable="true"/>
+                    <Button fx:id="btnDeleteTreatment" text="Eliminar"
+                            onAction="#onDeleteTreatment"
+                            styleClass="btn,btn-danger"
+                            maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            disable="true"/>
+                </HBox>
+            </VBox>
+
+        </VBox>
+
+        <!-- Columna derecha: tabla de detalles + formulario de medicamento -->
+        <VBox spacing="10" HBox.hgrow="ALWAYS">
+
+            <Label text="Medicamentos del Tratamiento Seleccionado"
+                   textFill="#aaaaaa"
+                   style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+
+            <TableView fx:id="tableDetails" prefHeight="210"
+                       VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+                <columns>
+                    <TableColumn fx:id="colMedicine"  text="Medicamento" prefWidth="175"/>
+                    <TableColumn fx:id="colDose"      text="Dosis"       prefWidth="115"/>
+                    <TableColumn fx:id="colFrequency" text="Frecuencia"  prefWidth="125"/>
+                </columns>
+                <placeholder>
+                    <Label text="Selecciona un tratamiento para ver sus medicamentos"
+                           textFill="#666666" wrapText="true"/>
+                </placeholder>
+            </TableView>
+
+            <!-- Formulario de medicamento — visible solo para el medico -->
+            <VBox fx:id="detailFormSection" spacing="8"
+                  style="-fx-background-color: #2a2a3e; -fx-padding: 14; -fx-background-radius: 6;">
+                <Label text="Agregar Medicamento" textFill="WHITE"
+                       style="-fx-font-weight: bold;"/>
+                <!-- FEATURE 7: combo cargado desde el catalogo de medicamentos activos -->
+                <ComboBox fx:id="comboMedicine"
+                          promptText="Seleccionar medicamento *"
+                          maxWidth="Infinity"
+                          style="-fx-background-color: #3a3a4e; -fx-text-fill: white;"/>
+                <HBox spacing="8">
+                    <TextField fx:id="txtDose" promptText="Dosis  ej: 500 mg"
+                               HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                               style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                                      -fx-prompt-text-fill: #666666;"/>
+                    <TextField fx:id="txtFrequency" promptText="Frecuencia  ej: cada 8 h"
+                               HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                               style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                                      -fx-prompt-text-fill: #666666;"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Button fx:id="btnAddDetail" text="Agregar Medicamento"
+                            onAction="#onAddDetail"
+                            styleClass="btn,btn-success"
+                            maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnDeleteDetail" text="Quitar Seleccionado"
+                            onAction="#onDeleteDetail"
+                            styleClass="btn,btn-danger"
+                            maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+
+        </VBox>
+
+    </HBox>
+
+    <!-- Mensaje de estado -->
+    <Label fx:id="lblStatus" text="" textFill="#7f8c8d"/>
+
+</VBox>

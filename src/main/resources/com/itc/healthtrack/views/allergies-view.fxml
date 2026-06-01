@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- FEATURE 4 — Gestion de alergias del paciente (desktop) -->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" style="-fx-background-color: #1e1e2e;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.itc.healthtrack.controllers.AllergiesController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+
+    <!-- Title -->
+    <Label text="Gestión de Alergias" textFill="WHITE"
+           style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+    <Label text="Registro de alergias relevantes del expediente clínico del paciente."
+           textFill="#aaaaaa" style="-fx-font-size: 12px;"/>
+
+    <!-- Patient selector (medico/admin) -->
+    <HBox spacing="10.0" alignment="CENTER_LEFT">
+        <Label text="Paciente:" textFill="#aaaaaa" style="-fx-font-weight: bold;"/>
+        <ComboBox fx:id="comboPatients" prefWidth="280.0" promptText="Elige un paciente..." />
+    </HBox>
+
+    <!-- Create / edit form -->
+    <VBox spacing="10.0" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <Label fx:id="lblFormTitle" text="Nueva Alergia" textFill="WHITE"
+               style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <GridPane hgap="12" vgap="10">
+            <Label text="Alérgeno *:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtAllergen" promptText="Ej: Penicilina, Maní" prefWidth="240.0" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+
+            <Label text="Tipo:" textFill="#aaaaaa" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <ComboBox fx:id="comboType" promptText="Tipo de alergia" prefWidth="200.0" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+            <Label text="Gravedad *:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-font-weight: bold;"/>
+            <ComboBox fx:id="comboSeverity" promptText="Gravedad" prefWidth="240.0" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+            <Label text="Reacción:" textFill="#aaaaaa" GridPane.columnIndex="2" GridPane.rowIndex="1" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtReaction" promptText="Ej: Urticaria, Anafilaxia" prefWidth="200.0" GridPane.columnIndex="3" GridPane.rowIndex="1"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+        </GridPane>
+
+        <HBox spacing="10.0">
+            <Button fx:id="btnSave" text="Agregar" onAction="#onSaveAllergy"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+            <Button text="Limpiar" onAction="#onClearForm"
+                    style="-fx-background-color: #444444; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Allergies table -->
+    <VBox spacing="10.0" VBox.vgrow="ALWAYS" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <HBox alignment="CENTER_LEFT" spacing="15.0">
+            <Label text="Alergias Registradas" textFill="WHITE"
+                style="-fx-font-size: 20px; -fx-font-weight: bold "/>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="Eliminar Seleccionada" onAction="#onDeleteAllergy" styleClass="btn, btn-danger" />
+        </HBox>
+
+        <TableView fx:id="tableAllergies" VBox.vgrow="ALWAYS" style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+            <columns>
+                <TableColumn fx:id="colAllergen" text="Alérgeno"  prefWidth="200" />
+                <TableColumn fx:id="colType"     text="Tipo"      prefWidth="150" />
+                <TableColumn fx:id="colSeverity" text="Gravedad"  prefWidth="120" />
+                <TableColumn fx:id="colReaction" text="Reacción"  prefWidth="240" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+
+        <Label fx:id="lblStatus" wrapText="true" textFill="#aaaaaa" />
+    </VBox>
+</VBox>

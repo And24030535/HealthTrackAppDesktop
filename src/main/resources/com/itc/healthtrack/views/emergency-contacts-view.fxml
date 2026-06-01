@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- FEATURE 3 — Contactos de emergencia del paciente (desktop) -->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" style="-fx-background-color: #1e1e2e;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.itc.healthtrack.controllers.EmergencyContactsController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+
+    <!-- Title -->
+    <Label text="Contactos de Emergencia" textFill="WHITE"
+           style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+    <Label text="Estas personas serán avisadas por correo ante una alerta clínica crítica."
+           textFill="#aaaaaa" style="-fx-font-size: 12px;"/>
+
+    <!-- Create / edit form -->
+    <VBox spacing="10.0" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <Label fx:id="lblFormTitle" text="Nuevo Contacto" textFill="WHITE"
+               style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <GridPane hgap="12" vgap="10">
+            <Label text="Nombre *:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtName" promptText="Nombre completo" prefWidth="240.0" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+
+            <Label text="Teléfono *:" textFill="#aaaaaa" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtPhone" promptText="Ej: 5512345678" prefWidth="200.0" GridPane.columnIndex="3" GridPane.rowIndex="0"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+
+            <Label text="Parentesco:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtRelationship" promptText="Ej: Madre, Hermano" prefWidth="240.0" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+
+            <Label text="Correo:" textFill="#aaaaaa" GridPane.columnIndex="2" GridPane.rowIndex="1" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtEmail" promptText="contacto@correo.com" prefWidth="200.0" GridPane.columnIndex="3" GridPane.rowIndex="1"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+
+            <CheckBox fx:id="chkPrimary" text="Contacto principal (recibe las alertas críticas)" textFill="#ffcc00"
+                      GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="3"/>
+        </GridPane>
+
+        <HBox spacing="10.0">
+            <Button fx:id="btnSave" text="Agregar" onAction="#onSaveContact"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+            <Button text="Limpiar" onAction="#onClearForm"
+                    style="-fx-background-color: #444444; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Contacts table -->
+    <VBox spacing="10.0" VBox.vgrow="ALWAYS" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <HBox alignment="CENTER_LEFT" spacing="15.0">
+            <Label text="Mis Contactos" textFill="WHITE"
+                style="-fx-font-size: 20px; -fx-font-weight: bold "/>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="Marcar como Principal" onAction="#onSetPrimary"
+                    style="-fx-background-color: #ff9800; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 14;"/>
+            <Button text="Eliminar Seleccionado" onAction="#onDeleteContact" styleClass="btn, btn-danger" />
+        </HBox>
+
+        <TableView fx:id="tableContacts" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colName"         text="Nombre"      prefWidth="180" />
+                <TableColumn fx:id="colPhone"        text="Teléfono"    prefWidth="140" />
+                <TableColumn fx:id="colRelationship" text="Parentesco"  prefWidth="140" />
+                <TableColumn fx:id="colEmail"        text="Correo"      prefWidth="220" />
+                <TableColumn fx:id="colPrimary"      text="Principal"   prefWidth="90" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+
+        <Label fx:id="lblStatus" wrapText="true" textFill="#aaaaaa" />
+    </VBox>
+</VBox>

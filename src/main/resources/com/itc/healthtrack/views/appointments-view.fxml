@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- FEATURE 5 — Sistema de citas (desktop) -->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" style="-fx-background-color: #1e1e2e;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.itc.healthtrack.controllers.AppointmentsController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+
+    <!-- Title -->
+    <Label text="Citas Médicas" textFill="WHITE"
+           style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+    <Label text="Agenda y consulta el estado de tus citas médicas."
+           textFill="#aaaaaa" style="-fx-font-size: 12px;"/>
+
+    <!-- Booking form (solo paciente) -->
+    <VBox fx:id="bookingSection" spacing="10.0" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <Label text="Agendar Nueva Cita" textFill="WHITE"
+               style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <Label fx:id="lblAssignedDoctor" text="" textFill="#aaaaaa" style="-fx-font-size: 12px;"/>
+        <GridPane hgap="12" vgap="10">
+            <Label text="Fecha *:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <DatePicker fx:id="dpDate" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+            <Label text="Hora *:" textFill="#aaaaaa" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-weight: bold;"/>
+            <ComboBox fx:id="comboTime" promptText="Selecciona hora" prefWidth="160.0" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+            <Label text="Motivo *:" textFill="#aaaaaa" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtReason" promptText="Ej: Consulta general, dolor de cabeza" prefWidth="420.0"
+                       GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="3"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+        </GridPane>
+
+        <HBox spacing="10.0">
+            <Button fx:id="btnBook" text="Agendar Cita" onAction="#onBookAppointment"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Appointments table -->
+    <VBox spacing="10.0" VBox.vgrow="ALWAYS" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <HBox alignment="CENTER_LEFT" spacing="10.0">
+            <Label text="Citas" textFill="WHITE"
+                style="-fx-font-size: 20px; -fx-font-weight: bold "/>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button fx:id="btnConfirm" text="Confirmar" onAction="#onConfirmAppointment"
+                    style="-fx-background-color: #2196f3; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 14;"/>
+            <Button fx:id="btnComplete" text="Completar" onAction="#onCompleteAppointment"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 14;"/>
+            <Button fx:id="btnCancel" text="Cancelar Cita" onAction="#onCancelAppointment" styleClass="btn, btn-danger" />
+        </HBox>
+
+        <TableView fx:id="tableAppointments" VBox.vgrow="ALWAYS" style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+            <columns>
+                <TableColumn fx:id="colDate"    text="Fecha"    prefWidth="110" />
+                <TableColumn fx:id="colTime"    text="Hora"     prefWidth="80" />
+                <TableColumn fx:id="colPatient" text="Paciente" prefWidth="160" />
+                <TableColumn fx:id="colDoctor"  text="Médico"   prefWidth="160" />
+                <TableColumn fx:id="colReason"  text="Motivo"   prefWidth="200" />
+                <TableColumn fx:id="colStatus"  text="Estado"   prefWidth="110" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+
+        <Label fx:id="lblStatus" wrapText="true" textFill="#aaaaaa" />
+    </VBox>
+</VBox>

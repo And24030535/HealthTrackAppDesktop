@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- FEATURE 1 — Catalogo de especialidades medicas (solo admin) -->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" style="-fx-background-color: #1e1e2e;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.itc.healthtrack.controllers.SpecialtiesController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+
+    <!-- Title -->
+    <Label text="Catálogo de Especialidades" textFill="WHITE"
+           style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+    <Label text="Gestiona las especialidades médicas disponibles para los médicos del sistema."
+           textFill="#aaaaaa" style="-fx-font-size: 12px;"/>
+
+    <!-- Create form -->
+    <VBox spacing="10.0" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <Label text="Nueva Especialidad" textFill="WHITE"
+               style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <HBox spacing="10.0" alignment="CENTER_LEFT">
+            <Label text="Nombre:" textFill="#aaaaaa" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtName" promptText="Ej: Cardiología" prefWidth="220.0"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+            <Label text="Descripción:" textFill="#aaaaaa" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="txtDescription" promptText="Descripción breve" prefWidth="320.0"
+                       style="-fx-background-color: #2a2a2a; -fx-text-fill: white; -fx-prompt-text-fill: #666666; -fx-border-color: #444; -fx-border-radius: 4;"/>
+            <Button text="Agregar" onAction="#onCreateSpecialty"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-cursor: hand; -fx-padding: 6 18;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Specialties table -->
+    <VBox spacing="10.0" VBox.vgrow="ALWAYS" styleClass="panel-secundario" style="-fx-padding: 20;">
+        <HBox alignment="CENTER_LEFT" spacing="15.0">
+            <Label text="Especialidades Registradas" textFill="WHITE"
+                style="-fx-font-size: 20px; -fx-font-weight: bold "/>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="Eliminar Seleccionada" onAction="#onDeleteSpecialty" styleClass="btn, btn-danger" />
+        </HBox>
+
+        <TableView fx:id="tableSpecialties" VBox.vgrow="ALWAYS" style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+            <columns>
+                <TableColumn fx:id="colName"        text="Nombre"      prefWidth="240" />
+                <TableColumn fx:id="colDescription" text="Descripción" prefWidth="460" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+
+        <Label fx:id="lblStatus" wrapText="true" textFill="#aaaaaa" />
+    </VBox>
+</VBox>

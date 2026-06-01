@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- FEATURE 7 — Catálogo de medicamentos (solo admin) -->
+<!-- los medicamentos nunca se eliminan: se desactivan con active=false -->
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.itc.healthtrack.controllers.MedicineCatalogController"
+      spacing="14"
+      style="-fx-background-color: #1e1e2e; -fx-padding: 20;">
+
+    <!-- Encabezado -->
+    <Label text="Catálogo de Medicamentos" textFill="WHITE"
+           style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+    <!-- Formulario de alta -->
+    <VBox spacing="8"
+          style="-fx-background-color: #2a2a3e; -fx-padding: 16; -fx-background-radius: 6;">
+        <Label text="Agregar Medicamento" textFill="WHITE"
+               style="-fx-font-weight: bold;"/>
+        <HBox spacing="8">
+            <TextField fx:id="txtGenericName" promptText="Nombre genérico *"
+                       HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                       style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                              -fx-prompt-text-fill: #666666;"/>
+            <TextField fx:id="txtCommercialName" promptText="Nombre comercial"
+                       HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                       style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                              -fx-prompt-text-fill: #666666;"/>
+            <TextField fx:id="txtManufacturer" promptText="Laboratorio / Fabricante"
+                       HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                       style="-fx-background-color: #3a3a4e; -fx-text-fill: white;
+                              -fx-prompt-text-fill: #666666;"/>
+        </HBox>
+        <HBox spacing="8">
+            <Button text="Agregar Medicamento" onAction="#onAddMedicine"
+                    styleClass="btn,btn-primary" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            <Button text="Desactivar Seleccionado" onAction="#onDeactivateMedicine"
+                    styleClass="btn,btn-warning" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            <Button text="Reactivar Seleccionado" onAction="#onReactivateMedicine"
+                    styleClass="btn,btn-success" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        </HBox>
+    </VBox>
+
+    <!-- Tabla de medicamentos -->
+    <TableView fx:id="tableMedicines" VBox.vgrow="ALWAYS"
+               style="-fx-background-color: #000000; -fx-control-inner-background: #000000;">
+        <columns>
+            <TableColumn fx:id="colGenericName"    text="Nombre Genérico"  prefWidth="200"/>
+            <TableColumn fx:id="colCommercialName" text="Nombre Comercial" prefWidth="175"/>
+            <TableColumn fx:id="colManufacturer"   text="Laboratorio"      prefWidth="175"/>
+            <TableColumn fx:id="colActive"         text="Estado"           prefWidth="80"/>
+        </columns>
+        <placeholder>
+            <Label text="Sin medicamentos en el catálogo" textFill="#666666"/>
+        </placeholder>
+    </TableView>
+
+    <!-- Mensaje de estado -->
+    <Label fx:id="lblStatus" text="" textFill="#7f8c8d"/>
+
+</VBox>
